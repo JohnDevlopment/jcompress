@@ -1,0 +1,217 @@
+#!/bin/bash
+
+_getpassword() {
+    local pswd copy
+
+    echo -e "\nEnter the new password" >&2
+    pswd=$(systemd-ask-password)
+
+    if [ -z "$pswd" ]; then
+	echo "empty password" >&2
+	return 1
+    fi
+
+    echo -e "\nConfirm password" >&2
+    copy=$(systemd-ask-password)
+    echo >&2
+
+    if [ "$pswd" != "$copy" ]; then
+	echo "failed to confirm password" >&2
+	return 1
+    fi
+
+    echo "$pswd"
+    true
+}
+
+declare -r BASENAME=${0##*/}
+
+declare -r USAGE=$(cat <<EOF
+usage: $BASENAME [OPTIONS] [-m|--mode MODE] [--] ARCHIVE FILE|DIR...
+       $BASENAME [OPTIONS] [-m|--mode MODE] [--] ARCHIVE FILE|DIR...
+       $BASENAME -h|--help
+
+Valid Modes:
+
+       zip
+       7z
+       tgz
+       tbz2
+       t7z
+
+Valid Extensions:
+
+       zip (.zip)
+       7z (.7z)
+       tgz (.tgz, .tar.gz)
+       tbz2 (.tbz2, .tar.bz2)
+       t7z (.t7z, .tar.7z)
+
+Options:
+
+       --mode name
+       -m     Specifiy the mode (or format) of the archive. If
+              omitted, the archive's extension is used.
+
+       --use-pigz
+              For the tgz format, this specifies pigz as the
+              compression program to use. Needless to say, pigz
+              must be installed.
+
+       --password
+              Encrypt the archive with a password. What happens
+              exactly will depend on the format.
+
+       --recursive
+       -r     Travel subdirectories recursively. Only applies to
+              zip.
+
+       --help
+       -h     Display this help message and exit.
+
+Environment Variables:
+
+       JC_GPGPUBKEY
+              For formats that use gpg to encrypt the file, this
+              holds the public key to use.
+              Current value: $JC_GPGPUBKEY
+EOF
+	)
+
+# Get option list
+temp=$(getopt -o 'hrm:' -l 'mode:,help,use-pigz,recursive,password,debug' -- "$@")
+if [ ! $? ]; then
+    echo "return code: $?"
+    echo -e "terminating...\n$USAGE" >&2
+    exit 1
+fi
+eval set -- "$temp"
+
+while true; do
+    case "$1" in
+	-m|--mode)
+	    mode="$2"
+	    modeerror="invalid mode: $mode"
+	    shift 2
+	    ;;
+	-h|--help)
+	    echo "$USAGE"
+	    exit
+	    ;;
+	--use-pigz)
+	    COMPRESSOR='--use-compress-program=pigz'
+	    shift
+	    ;;
+	-r|--recursive)
+	    recursive='-r'
+	    shift
+	    ;;
+	--password)
+	    password=1
+	    shift
+	    ;;
+	--debug)
+	    debug=1
+	    shift
+	    ;;
+	--)
+	    shift
+	    break
+	    ;;
+	*)
+	    echo 'internal error' >&2
+	    exit 1
+	    ;;
+    esac
+done
+
+# Posititional parameters
+case $# in
+    0)
+	echo -e "missing filename\n\n$USAGE" >&2
+	exit 1
+	;;
+    1)
+	echo -e "no files to insert\n\n$USAGE" >&2
+	exit 1
+	;;
+    *)
+
+esac
+
+archive="$1"
+shift
+
+# If MODE is not specified, use the archive name
+if [ -z "$mode" ]; then
+    mode="${archive#*.}"
+    modeerror="invalid or missing extension: $mode"
+elif [ -z "${archive#*.}" ]; then
+    temp="${archive%%.*}"
+    archive="$temp.$mode"
+fi
+
+# Password mode for certain compressed tar archives
+if [[ $mode =~ t(ar\.)?[gb]z$ ]]; then
+    if [ ${password:-0} -ne 0 ]; then
+	if [ -z "$JC_GPGPUBKEY" ]; then
+	    echo "no public key defined in \$JC_GPGPUBKEY" >&2
+	    exit 1
+	fi
+	gpgcommand=(gpg --encrypt --recipient $JC_GPGPUBKEY "$archive" "&&" rm -v "$archive")
+    fi
+fi
+
+# Which mode?
+case "$mode" in
+    zip)
+	password=
+	if [ ${password:-0} -ne 0 ]; then
+	    password=--encrypt
+	fi
+	cmdline=(zip -T $password $recursive "$archive" "$@")
+	;;
+    7z)
+	cmdprefix=7zr
+	
+	# passwords are given on the commandline with 7z
+	if [ ${password:-0} -ne 0 ]; then
+	    cmdprefix=7za
+	    password="-p"$(_getpassword)
+	    [ $? -eq 0 ] || exit 1
+	fi
+	cmdline=($cmdprefix a $password "$archive" "$@")
+	;;
+    tgz|tar.gz)
+	if [ -n "$COMPRESSOR" ]; then
+	    cmdline=(tar -c $COMPRESSOR -f "$archive" "$@")
+	else
+	    cmdline=(tar -czf "$archive" "$@")
+	fi
+	;;
+    tbz2|tar.bz2)
+	if [ -n "$COMPRESSOR" ]; then
+	    cmdline=(tar -cjf $COMPRESSOR "$archive" "$@")
+	else
+	    cmdline=(tar -cjf "$archive" "$@")
+	fi
+	;;
+    t7z|tar.7z)
+	cmdline=(tar -cf - "$@" "|" 7za a -si "$archive")
+	;;
+    *)
+	echo -e "$modeerror\n\n$USAGE" >&2
+	exit 1
+esac
+
+if [ ${debug:-0} -ne 0 ]; then
+    echo "${cmdline[@]}"
+    if [ -v gpgcommand ]; then
+	echo "${gpgcommand[@]}"
+    fi
+else
+    eval "${cmdline[@]}"
+    if [ -v gpgcommand ]; then
+	eval "${gpgcommand[@]}"
+    fi
+fi
