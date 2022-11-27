@@ -1,0 +1,91 @@
+#!/bin/bash
+
+declare -r BASENAME=${0##*/}
+
+declare -r HELP=$(cat <<EOF
+usage: $BASENAME [--list] ARCHIVE [FILE...]
+
+Options:
+
+       --list
+       -l     List the contents of ARCHIVE.
+
+       --verbose
+       -v     The output will be more detailed.
+EOF
+	)
+
+temp=$(getopt -o '' -l '' -- "$@")
+if [ ! $? ]; then
+    echo "return code: $?"
+    echo -e "$BASENAME: terminating...\n$HELP" >&2
+    exit 1
+fi
+eval set -- "$temp"
+echo "$temp"
+
+while true; do
+    case "$1" in
+	-l|--list)
+	    DOLIST=1
+	    shift
+	    ;;
+	-v|--verbose)
+	    DOVERBOSE=1
+	    shift
+	    ;;
+	--)
+	    shift
+	    break
+	    ;;
+	*)
+	    echo '$BASENAME: internal error' >&2
+	    exit 1
+    esac
+done
+
+# Archive not provided
+archive="$1"
+if [ -z "$archive" ]; then
+    echo "$BASENAME: missing filename" >&2
+    exit 1
+elif [ ! -f "$archive" ]; then
+    echo "$BASENAME: $archive does not exist" >&2
+    exit 1
+fi
+
+case "$archive" in
+    *.zip)
+	unzip "$archive"
+	;;
+    *.tar.gz|*.tgz)
+	tar xzf "$archive"
+	;;
+    *.tar.bz2|*.tbz2)
+	tar xjf "$archive"
+	;;
+    *.tar.xz)
+	tar xJf "$archive"
+	;;
+    *.tar.7z)
+	7za x -so "$archive" | tar xf -
+	;;
+    *.gz)
+	gunzip "$archive"
+	;;
+    *.bz2)
+	bunzip2 "$archive"
+	;;
+    *.tar)
+	tar xf "$archive"
+	;;
+    *.rar)
+	unrar x "$archive"
+	;;
+    *.7z)
+	7z x "$archive"
+	;;
+    *)
+	echo "$BASENAME: $archive not supported by extract()" >&2
+	exit 1
+esac
