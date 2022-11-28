@@ -79,9 +79,6 @@ case "$archive" in
     *.tar)
 	tar xf "$archive"
 	;;
-    *.rar)
-	unrar x "$archive"
-	;;
     *.7z)
 	7z x "$archive"
 	;;
