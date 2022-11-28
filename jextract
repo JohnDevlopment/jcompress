@@ -3,7 +3,7 @@
 declare -r BASENAME=${0##*/}
 
 declare -r HELP=$(cat <<EOF
-usage: $BASENAME [--list] ARCHIVE [FILE...]
+usage: $BASENAME [-lv] ARCHIVE [FILE...]
 
 Options:
 
@@ -15,9 +15,8 @@ Options:
 EOF
 	)
 
-temp=$(getopt -o '' -l '' -- "$@")
-if [ ! $? ]; then
-    echo "return code: $?"
+temp=$(getopt -o 'lv' -l 'list,verbose' -- "$@")
+if [ $? -ne 0 ]; then
     echo -e "$BASENAME: terminating...\n$HELP" >&2
     exit 1
 fi
