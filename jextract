@@ -1,9 +1,14 @@
 #!/bin/bash
 
+usage() {
+    echo "$HELP" | head -n 2
+}
+
 declare -r BASENAME=${0##*/}
 
 declare -r HELP=$(cat <<EOF
-usage: $BASENAME [-lv] ARCHIVE [FILE...]
+usage: $BASENAME [-lv] ARCHIVE
+       $BASENAME [-h]
 
 Options:
 
@@ -12,16 +17,26 @@ Options:
 
        --verbose
        -v     The output will be more detailed.
+
+       --help
+       -h     Print this help message and exit.
 EOF
 	)
 
-temp=$(getopt -o 'lv' -l 'list,verbose' -- "$@")
-if [ $? -ne 0 ]; then
-    echo -e "$BASENAME: terminating...\n$HELP" >&2
+tmp=$(mktemp)
+trap "rm $tmp" EXIT
+
+# Parse commandline options
+# If getopt returns true, noop, otherwise an error is generated
+if temp=$(getopt -o 'lv' -l 'list,verbose' -- "$@" 2>$tmp); then
+    # good
+    :
+else
+    echo -e "$BASENAME:`cat $tmp`" >&2
+    usage
     exit 1
 fi
 eval set -- "$temp"
-echo "$temp"
 
 while true; do
     case "$1" in
@@ -47,9 +62,11 @@ done
 archive="$1"
 if [ -z "$archive" ]; then
     echo "$BASENAME: missing filename" >&2
+    usage
     exit 1
 elif [ ! -f "$archive" ]; then
     echo "$BASENAME: $archive does not exist" >&2
+    usage
     exit 1
 fi
 
