@@ -179,6 +179,11 @@ if [[ $mode =~ t(ar\.)?[gb]z$ ]]; then
     fi
 fi
 
+# Detects if --use-pigz was passed with a format that isn't tgz
+if [[ ! $mode =~ t(ar\.)?gz$ && -v COMPRESSOR ]]; then
+    echo "$BASENAME: --use-pigz is not supported by $mode files" >&2
+fi
+
 # Which mode?
 case "$mode" in
     zip)
