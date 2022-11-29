@@ -143,11 +143,13 @@ done
 # Posititional parameters
 case $# in
     0)
-	echo -e "missing filename\n\n$USAGE" >&2
+	echo -e "missing filename" >&2
+	usage
 	exit 1
 	;;
     1)
-	echo -e "no files to insert\n\n$USAGE" >&2
+	echo -e "no files to insert" >&2
+	usage
 	exit 1
 	;;
     *)
