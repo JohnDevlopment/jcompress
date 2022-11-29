@@ -124,7 +124,8 @@ while true; do
 	    break
 	    ;;
 	*)
-	    echo 'internal error' >&2
+	    echo "$BASENAME: internal error" >&2
+	    usage
 	    exit 1
 	    ;;
     esac
@@ -160,7 +161,7 @@ fi
 if [[ $mode =~ t(ar\.)?[gb]z$ ]]; then
     if [ $password -ne 0 ]; then
 	if [ -z "$JC_GPGPUBKEY" ]; then
-	    echo "no public key defined in \$JC_GPGPUBKEY" >&2
+	    echo "$BASENAME: no public key defined in \$JC_GPGPUBKEY" >&2
 	    exit 1
 	fi
 	gpgcommand=(gpg --encrypt --recipient $JC_GPGPUBKEY "$archive" "&&" rm -v "$archive")
