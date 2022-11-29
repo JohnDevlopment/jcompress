@@ -83,10 +83,7 @@ EOF
 alias usage='echo; echo "$USAGE" | head -n 2 >&2'
 
 # Get option list
-temp=$(getopt -o 'hrm:' -l 'mode:,help,use-pigz,recursive,password,debug' -- "$@")
-if [ ! $? ]; then
-    echo "return code: $?"
-    echo -e "terminating...\n$USAGE" >&2
+if ! temp=$(getopt -n $BASENAME -o 'hrm:' -l 'mode:,help,use-pigz,recursive,password,debug' -- "$@"); then
     usage
     exit 1
 fi
