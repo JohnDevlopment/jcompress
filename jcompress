@@ -26,9 +26,8 @@ _getpassword() {
     true
 }
 
-declare -r VERSION="[VERSION]"
-
 declare -r BASENAME=${0##*/}
+declare -r VERSION="$BASENAME [VERSION]"
 
 declare -r USAGE=$(cat <<EOF
 usage: $BASENAME [OPTIONS] [-m|--mode MODE] [--] ARCHIVE FILE|DIR...

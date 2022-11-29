@@ -5,6 +5,7 @@ usage() {
 }
 
 declare -r BASENAME=${0##*/}
+declare -r VERSION="$BASENAME [VERSION]"
 
 declare -r HELP=$(cat <<EOF
 usage: $BASENAME [-lv] ARCHIVE
