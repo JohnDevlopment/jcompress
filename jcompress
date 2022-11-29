@@ -81,6 +81,10 @@ EOF
 
 alias usage='echo; echo "$USAGE" | head -n 2 >&2'
 
+# Option defaults
+password=0
+debug=
+
 # Get option list
 if ! temp=$(getopt -n $BASENAME -o 'hrm:' -l 'mode:,help,use-pigz,recursive,password,debug' -- "$@"); then
     usage
@@ -154,7 +158,7 @@ fi
 
 # Password mode for certain compressed tar archives
 if [[ $mode =~ t(ar\.)?[gb]z$ ]]; then
-    if [ ${password:-0} -ne 0 ]; then
+    if [ $password -ne 0 ]; then
 	if [ -z "$JC_GPGPUBKEY" ]; then
 	    echo "no public key defined in \$JC_GPGPUBKEY" >&2
 	    exit 1
@@ -167,7 +171,7 @@ fi
 case "$mode" in
     zip)
 	password=
-	if [ ${password:-0} -ne 0 ]; then
+	if [ $password -ne 0 ]; then
 	    password=--encrypt
 	fi
 	cmdline=(zip -T $password $recursive "$archive" "$@")
@@ -176,7 +180,7 @@ case "$mode" in
 	cmdprefix=7zr
 	
 	# passwords are given on the commandline with 7z
-	if [ ${password:-0} -ne 0 ]; then
+	if [ $password -ne 0 ]; then
 	    cmdprefix=7za
 	    password="-p"$(_getpassword)
 	    [ $? -eq 0 ] || exit 1
