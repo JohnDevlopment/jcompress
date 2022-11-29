@@ -30,7 +30,6 @@ declare -r BASENAME=${0##*/}
 
 declare -r USAGE=$(cat <<EOF
 usage: $BASENAME [OPTIONS] [-m|--mode MODE] [--] ARCHIVE FILE|DIR...
-       $BASENAME [OPTIONS] [-m|--mode MODE] [--] ARCHIVE FILE|DIR...
        $BASENAME -h|--help
 
 Valid Modes:
