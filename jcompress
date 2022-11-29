@@ -26,6 +26,8 @@ _getpassword() {
     true
 }
 
+declare -r VERSION="[VERSION]"
+
 declare -r BASENAME=${0##*/}
 
 declare -r USAGE=$(cat <<EOF
@@ -70,6 +72,9 @@ Options:
        --help
        -h     Display this help message and exit.
 
+       --version
+       -V     Print the program version and exit.
+
 Environment Variables:
 
        JC_GPGPUBKEY
@@ -86,7 +91,7 @@ password=0
 debug=
 
 # Get option list
-if ! temp=$(getopt -n $BASENAME -o 'hrm:' -l 'mode:,help,use-pigz,recursive,password,debug' -- "$@"); then
+if ! temp=$(getopt -n $BASENAME -o 'hrVm:' -l 'mode:,help,use-pigz,recursive,password,debug,version' -- "$@"); then
     usage
     exit 1
 fi
@@ -101,6 +106,10 @@ while true; do
 	    ;;
 	-h|--help)
 	    echo "$USAGE"
+	    exit
+	    ;;
+	-V|--version)
+	    echo $VERSION
 	    exit
 	    ;;
 	--use-pigz)
