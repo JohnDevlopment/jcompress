@@ -1,5 +1,7 @@
 #!/bin/bash
 
+shopt -s expand_aliases
+
 _getpassword() {
     local pswd copy
 
@@ -78,11 +80,14 @@ Environment Variables:
 EOF
 	)
 
+alias usage='echo; echo "$USAGE" | head -n 2 >&2'
+
 # Get option list
 temp=$(getopt -o 'hrm:' -l 'mode:,help,use-pigz,recursive,password,debug' -- "$@")
 if [ ! $? ]; then
     echo "return code: $?"
     echo -e "terminating...\n$USAGE" >&2
+    usage
     exit 1
 fi
 eval set -- "$temp"
