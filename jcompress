@@ -212,11 +212,7 @@ case "$mode" in
 	fi
 	;;
     tbz2|tar.bz2)
-	if [ -n "$COMPRESSOR" ]; then
-	    cmdline=(tar -cjf $COMPRESSOR "$archive" "$@")
-	else
-	    cmdline=(tar -cjf "$archive" "$@")
-	fi
+	cmdline=(tar -cjf "$archive" "$@")
 	;;
     t7z|tar.7z)
 	cmdline=(tar -cf - "$@" "|" 7za a -si "$archive")
