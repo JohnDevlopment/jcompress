@@ -34,7 +34,6 @@ usage: $BASENAME [OPTIONS] [-m|--mode MODE] [--] ARCHIVE FILE|DIR...
        $BASENAME -h|--help
 
 Valid Modes:
-
        zip
        7z
        tgz
@@ -42,7 +41,6 @@ Valid Modes:
        t7z
 
 Valid Extensions:
-
        zip (.zip)
        7z (.7z)
        tgz (.tgz, .tar.gz)
@@ -50,32 +48,31 @@ Valid Extensions:
        t7z (.t7z, .tar.7z)
 
 Options:
+       -h
+       --help Display this help message and exit.
 
-       --mode name
-       -m     Specifiy the mode (or format) of the archive. If
+       -V
+       --version
+	     Print the program version and exit.
+
+       -m mode
+       --mode Specifiy the mode (or format) of the archive. If
               omitted, the archive's extension is used.
 
        --use-pigz
               For the tgz format, this specifies pigz as the
-              compression program to use. Needless to say, pigz
-              must be installed.
+              compression program to use.
 
        --password
               Encrypt the archive with a password. What happens
               exactly will depend on the format.
 
+       -r
        --recursive
-       -r     Travel subdirectories recursively. Only applies to
-              zip.
+              Travel subdirectories recursively.
 
-       --help
-       -h     Display this help message and exit.
-
-       --version
-       -V     Print the program version and exit.
 
 Environment Variables:
-
        JC_GPGPUBKEY
               For formats that use gpg to encrypt the file, this
               holds the public key to use.
