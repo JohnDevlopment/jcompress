@@ -90,7 +90,7 @@ password=0
 debug=
 
 # Get option list
-if ! temp=$(getopt -n $BASENAME -o 'hrVm:' -l 'mode:,help,use-pigz,recursive,password,debug,version' -- "$@"); then
+if ! temp=$(getopt -n $BASENAME -o 'hrVMm:' -l 'mode:,move,help,use-pigz,recursive,password,debug,version' -- "$@"); then
     usage
     exit 1
 fi
@@ -125,6 +125,10 @@ while true; do
 	    ;;
 	--debug)
 	    debug=1
+	    shift
+	    ;;
+	-M|--move)
+	    movefiles=1
 	    shift
 	    ;;
 	--)
@@ -186,34 +190,48 @@ fi
 # Which mode?
 case "$mode" in
     zip)
+	temp=$password
 	password=
-	if [ $password -ne 0 ]; then
+	if [ $temp -ne 0 ]; then
 	    password=--encrypt
 	fi
-	cmdline=(zip -T $password $recursive "$archive" "$@")
+	if [ ${movefiles:-0} ]; then
+	    movefiles='--move'
+	fi
+	cmdline=(zip -T $movefiles $password $recursive "$archive" "$@")
 	;;
     7z)
 	cmdprefix=7zr
 	
 	# passwords are given on the commandline with 7z
-	if [ $password -ne 0 ]; then
+	temp=$password
+	password=
+	if [ $temp -ne 0 ]; then
 	    cmdprefix=7za
 	    password="-p"$(_getpassword)
 	    [ $? -eq 0 ] || exit 1
 	fi
-	cmdline=($cmdprefix a $password "$archive" "$@")
+	test ${movefiles:-0} && movefiles='-sdel'
+	cmdline=($cmdprefix a $movefiles $password "$archive" "$@")
 	;;
     tgz|tar.gz)
+	test ${movefiles:-0} && movefiles='--remove-files'
+
 	if [ -n "$COMPRESSOR" ]; then
-	    cmdline=(tar -c $COMPRESSOR -f "$archive" "$@")
+	    cmdline=(tar -c $movefiles $COMPRESSOR -f "$archive" "$@")
 	else
-	    cmdline=(tar -czf "$archive" "$@")
+	    cmdline=(tar -cz $movefiles -f "$archive" "$@")
 	fi
 	;;
     tbz2|tar.bz2)
-	cmdline=(tar -cjf "$archive" "$@")
+	test ${movefiles:-0} && movefiles='--remove-files'
+	cmdline=(tar -cj $movefiles -f "$archive" "$@")
 	;;
     t7z|tar.7z)
+	if bool ${movefiles:-0}; then
+	    special7z_deletesources=1
+	    unset movefiles
+	fi
 	cmdline=(tar -cf - "$@" "|" 7za a -si "$archive")
 	;;
     *)
@@ -230,5 +248,12 @@ else
     eval "${cmdline[@]}"
     if [ -v gpgcommand ]; then
 	eval "${gpgcommand[@]}"
+    fi
+    # Special: tar.7z archives
+    # Delete source file(s) after successful creation of archive
+    echo "-- ${special7z_deletesources:-0}"
+    if bool ${special7z_deletesources:-0}; then
+	echo
+	rm -rfv "$@"
     fi
 fi
