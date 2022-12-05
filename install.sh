@@ -4,6 +4,8 @@ prefix=/usr/local
 
 declare -r BASENAME=${0##*/}
 
+declare -r ROOTDIR=$(dirname $(realpath $0))
+
 declare -r HELP=$(cat <<EOF
 usage: $BASENAME [--prefix PATH]
        $BASENAME -h|--help
@@ -16,6 +18,39 @@ Options:
               Sets the installation path to PATH. (Default: $prefix)
 EOF
 	)
+
+die() {
+    local msg="$1"
+    local code=${2:-1}
+
+    echo "$BASENAME: $msg" >&2
+    exit $code
+}
+
+# usage: install DIR FILE...
+install() {
+    local installed=()
+    local dir="${1:?no directory}"
+    shift
+    if [ -z "$1" ]; then
+	die "no files to install"
+    fi
+
+    local file
+    for file; do
+	if ! mv -f "$file" "$dir/"; then
+	    # Error
+	    rm -f "${installed[@]}" >&2
+	    die "failed to install $file"
+	fi
+	installed+=("$dir/${file##*/}")
+    done
+
+    printf "%s\n" "${installed[@]}" > "$ROOTDIR/install_manifest.txt"
+    echo "installed files:"
+    printf "\t%s\n" "${installed[@]}"
+    
+}
 
 # Process commandline
 if ! temp=$(getopt -n $BASENAME -o 'h' -l 'help,prefix:' -- "$@"); then
@@ -71,4 +106,4 @@ fi
 
 # Transfer the source files into their respective directories
 cd $tmpdir
-mv -vf -t $prefix/bin "${binfiles[@]}"
+install $prefix/bin "${binfiles[@]}"
