@@ -2,6 +2,21 @@
 
 shopt -s expand_aliases
 
+die() {
+    local msg="$1"
+    local code=${2:-1}
+
+    echo "$BASENAME: $msg" >&2
+    exit $code
+}
+
+bool() {
+    local val=${1:?no value}
+    expr $val + 1 >/dev/null || die "invalid boolean value: $val"
+    test $val -ne 0 && return `true`
+    false
+}
+
 _getpassword() {
     local pswd copy
 
@@ -29,6 +44,7 @@ _getpassword() {
 declare -r BASENAME=${0##*/}
 declare -r VERSION="$BASENAME [VERSION]"
 
+# TODO: Add option to use pbzip2 for compression
 declare -r USAGE=$(cat <<EOF
 usage: $BASENAME [OPTIONS] [-m|--mode MODE] [--] ARCHIVE FILE|DIR...
        $BASENAME -h|--help
@@ -170,7 +186,7 @@ fi
 
 # Password mode for certain compressed tar archives
 if [[ $mode =~ t(ar\.)?[gb]z$ ]]; then
-    if [ $password -ne 0 ]; then
+    if bool $password; then
 	if [ -z "$JC_GPGPUBKEY" ]; then
 	    echo "$BASENAME: no public key defined in \$JC_GPGPUBKEY" >&2
 	    exit 1
@@ -189,21 +205,21 @@ case "$mode" in
     zip)
 	temp=$password
 	password=
-	if [ $temp -ne 0 ]; then
+	if bool $temp; then
 	    password=--encrypt
 	fi
-	if [ ${movefiles:-0} ]; then
+	if bool ${movefiles:-0}; then
 	    movefiles='--move'
 	fi
 	cmdline=(zip -T $movefiles $password $recursive "$archive" "$@")
 	;;
     7z)
 	cmdprefix=7zr
-	
+
 	# passwords are given on the commandline with 7z
 	temp=$password
 	password=
-	if [ $temp -ne 0 ]; then
+	if bool $temp; then
 	    cmdprefix=7za
 	    password="-p"$(_getpassword)
 	    [ $? -eq 0 ] || exit 1
@@ -212,7 +228,7 @@ case "$mode" in
 	cmdline=($cmdprefix a $movefiles $password "$archive" "$@")
 	;;
     tgz|tar.gz)
-	test ${movefiles:-0} && movefiles='--remove-files'
+	bool ${movefiles:-0} && movefiles='--remove-files'
 
 	if [ -n "$COMPRESSOR" ]; then
 	    cmdline=(tar -c $movefiles $COMPRESSOR -f "$archive" "$@")
@@ -221,6 +237,9 @@ case "$mode" in
 	fi
 	;;
     tbz2|tar.bz2)
+	bool ${movefiles:-0} && movefiles='--remove-files'
+
+	# TODO: Add option to use pbzip2 for compression
 	test ${movefiles:-0} && movefiles='--remove-files'
 	cmdline=(tar -cj $movefiles -f "$archive" "$@")
 	;;
@@ -236,13 +255,13 @@ case "$mode" in
 	exit 1
 esac
 
-if [ ${debug:-0} -ne 0 ]; then
+if bool ${debug:-0}; then
     echo "${cmdline[@]}"
     if [ -v gpgcommand ]; then
 	echo "${gpgcommand[@]}"
     fi
 else
-    eval "${cmdline[@]}"
+    eval "${cmdline[@]}" || exit 1
     if [ -v gpgcommand ]; then
 	eval "${gpgcommand[@]}"
     fi
