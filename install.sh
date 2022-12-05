@@ -9,8 +9,8 @@ usage: $BASENAME [--prefix PATH]
        $BASENAME -h|--help
 
 Options:
-       --help
-       -h     Print this help message and exit.
+       -h
+       --help Print this help message and exit.
 
        --prefix PATH
               Sets the installation path to PATH. (Default: $prefix)
