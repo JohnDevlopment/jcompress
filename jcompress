@@ -87,6 +87,10 @@ Options:
        --recursive
               Travel subdirectories recursively.
 
+       -M
+       --move Move the files into the archive. Actually, the files are
+       	      simply deleted after copying them.
+
 
 Environment Variables:
        JC_GPGPUBKEY
