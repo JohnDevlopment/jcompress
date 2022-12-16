@@ -29,7 +29,7 @@ trap "rm $tmp" EXIT
 
 # Parse commandline options
 # If getopt returns true, noop, otherwise an error is generated
-if temp=$(getopt -o 'lv' -l 'list,verbose' -- "$@" 2>$tmp); then
+if temp=$(getopt -o 'hVlv' -l 'help,version,list,verbose' -- "$@" 2>$tmp); then
     # good
     :
 else
@@ -41,6 +41,14 @@ eval set -- "$temp"
 
 while true; do
     case "$1" in
+	-h|--help)
+	    echo "$HELP"
+	    exit
+	    ;;
+	-V|--version)
+	    echo $VERSION
+	    exit
+	    ;;
 	-l|--list)
 	    DOLIST=1
 	    shift
