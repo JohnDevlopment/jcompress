@@ -3,7 +3,7 @@
 .SH NAME
 jcompress \- all-in-one compression script
 .SH SYNOPSIS
-usage: jcompress [OPTIONS] [\-m|\-\-mode MODE] [\-\-] ARCHIVE FILE|DIR...
+usage: jcompress [OPTIONS] [-m|--mode MODE] [--] ARCHIVE FILE|DIR...
        jcompress \fB-h\fR|--help
 .SH DESCRIPTION
 jcompress is a convenvience script for interfacing with different archiving programs.
@@ -18,41 +18,45 @@ tbz2 (.tbz2, .tar.bz2),
 t7z (.t7z, .tar.7z)
 .SH OPTIONS
 .HP
-\fB\-h\fR
+\fB-h\fR
 .HP
-\fB\-\-help\fR Display this help message and exit.
+\fB--help\fR Display this help message and exit.
 .HP
-\fB\-V\fR
+\fB-V\fR
 .HP
 \fB--version\fR
 .IP
 Print the program version and exit.
 .HP
-\fB\-m\fR mode
+\fB-m\fR mode
 .TP
-.B \--mode
+.B --mode
 Specifiy the mode (or format) of the archive.
 If omitted, the archive's extension is used.
 .HP
-\fB\-\-use\-pigz\fR
+\fB--use-pigz\fR
 .IP
 For the tgz format, this specifies pigz as the compression program to use.
 .HP
-\fB\-\-password\fR
+.B --use-pigz
+.IP
+For the tbz2 format, this specifies pbzip2 as the compression program to use.
+.HP
+\fB--password\fR
 .IP
 Encrypt the archive with a password.
 What happens exactly will depend on the format.
 .HP
-\fB\-r\fR
+\fB-r\fR
 .HP
-\fB\-\-recursive\fR
+\fB--recursive\fR
 .IP
 Travel subdirectories recursively.
 This option is ignored for some programs, like 7z.
 .HP
-.B \-M
+.B -M
 .TP
-.B \--move
+.B --move
 Move the files into the archive.
 Actually, the files are simply deleted after copying them.
 .SH "ENVIRONMENT VARIABLES"

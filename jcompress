@@ -44,7 +44,6 @@ _getpassword() {
 declare -r BASENAME=${0##*/}
 declare -r VERSION="$BASENAME [VERSION]"
 
-# TODO: Add option to use pbzip2 for compression
 declare -r USAGE=$(cat <<EOF
 usage: $BASENAME [OPTIONS] [-m|--mode MODE] [--] ARCHIVE FILE|DIR...
        $BASENAME -h|--help
@@ -79,6 +78,10 @@ Options:
               For the tgz format, this specifies pigz as the
               compression program to use.
 
+       --use-pbzip2
+              For the tbz2 format, this specifies pbzip2 as the
+	      compression program to use.
+
        --password
               Encrypt the archive with a password. What happens
               exactly will depend on the format.
@@ -90,7 +93,6 @@ Options:
        -M
        --move Move the files into the archive. Actually, the files are
        	      simply deleted after copying them.
-
 
 Environment Variables:
        JC_GPGPUBKEY
@@ -107,7 +109,7 @@ password=0
 debug=
 
 # Get option list
-if ! temp=$(getopt -n $BASENAME -o 'hrVMm:' -l 'mode:,move,help,use-pigz,recursive,password,debug,version' -- "$@"); then
+if ! temp=$(getopt -n $BASENAME -o 'hrVMm:' -l 'mode:,move,help,use-pigz,use-pbzip2,recursive,password,debug,version' -- "$@"); then
     usage
     exit 1
 fi
@@ -130,6 +132,10 @@ while true; do
 	    ;;
 	--use-pigz)
 	    COMPRESSOR='--use-compress-program=pigz'
+	    shift
+	    ;;
+	--use-pbzip2)
+	    COMPRESSOR2='--use-compress-program=pbzip2'
 	    shift
 	    ;;
 	-r|--recursive)
@@ -204,6 +210,11 @@ if [[ ! $mode =~ t(ar\.)?gz$ && -v COMPRESSOR ]]; then
     echo "$BASENAME: --use-pigz is not supported by $mode files" >&2
 fi
 
+# Detects if --use-pbzip2 was passed with a format that isn't tgz
+if [[ ! $mode =~ t(ar\.)?bz2$ && -v COMPRESSOR2 ]]; then
+    echo "$BASENAME: --use-pbzip2 is not supported by $mode files" >&2
+fi
+
 # Which mode?
 case "$mode" in
     zip)
@@ -243,9 +254,11 @@ case "$mode" in
     tbz2|tar.bz2)
 	bool ${movefiles:-0} && movefiles='--remove-files'
 
-	# TODO: Add option to use pbzip2 for compression
-	test ${movefiles:-0} && movefiles='--remove-files'
-	cmdline=(tar -cj $movefiles -f "$archive" "$@")
+	if [ -n "$COMPRESSOR2" ]; then
+	    cmdline=(tar -c $movefiles $COMPRESSOR2 -f "$archive" "$@")
+	else
+	    cmdline=(tar -cj $movefiles -f "$archive" "$@")
+	fi
 	;;
     t7z|tar.7z)
 	if bool ${movefiles:-0}; then
@@ -271,7 +284,6 @@ else
     fi
     # Special: tar.7z archives
     # Delete source file(s) after successful creation of archive
-    echo "-- ${special7z_deletesources:-0}"
     if bool ${special7z_deletesources:-0}; then
 	echo
 	rm -rfv "$@"
