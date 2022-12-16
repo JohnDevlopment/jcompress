@@ -19,8 +19,8 @@ Options:
        --version
               Print the program version and exit.
 
-       --list
-       -l     List the contents of ARCHIVE.
+       -l
+       --list List the contents of ARCHIVE.
 
        -v
        --verbose

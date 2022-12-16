@@ -68,7 +68,7 @@ Options:
 
        -V
        --version
-	     Print the program version and exit.
+              Print the program version and exit.
 
        -m mode
        --mode Specifiy the mode (or format) of the archive. If
