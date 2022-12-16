@@ -9,18 +9,22 @@ declare -r VERSION="$BASENAME [VERSION]"
 
 declare -r HELP=$(cat <<EOF
 usage: $BASENAME [-lv] ARCHIVE
-       $BASENAME [-h]
+       $BASENAME [-h|-V]
 
 Options:
+       -h
+       --help Print this help message and exit.
+
+       -V
+       --version
+              Print the program version and exit.
 
        --list
        -l     List the contents of ARCHIVE.
 
+       -v
        --verbose
-       -v     The output will be more detailed.
-
-       --help
-       -h     Print this help message and exit.
+	      The output will be more detailed.
 EOF
 	)
 
