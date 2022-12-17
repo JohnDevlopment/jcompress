@@ -49,7 +49,8 @@ install() {
     printf "%s\n" "${installed[@]}" > "$ROOTDIR/install_manifest.txt"
     echo "installed files:"
     printf "\t%s\n" "${installed[@]}"
-    
+    echo "created install_manifest.txt." \
+	 "That file is neccessary should you decide to uninstall this with uninstall.sh."
 }
 
 # Process commandline
