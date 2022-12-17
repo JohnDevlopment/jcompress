@@ -37,8 +37,8 @@ exec 3<install_manifest.txt
 FILEOPENED=1
 
 # Read each line
+filestoremove=()
 while read -u 3 line; do
-    filestoremove=()
     if [ -f "$line" ]; then
 	test -w "$line" || die "cannot remove $file, permission denied"
 	filestoremove+=("$line")
