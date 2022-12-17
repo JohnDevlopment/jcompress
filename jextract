@@ -56,9 +56,6 @@ Options:
        --version
               Print the program version and exit.
 
-       -l
-       --list List the contents of ARCHIVE.
-
        -v
        --verbose
 	      The output will be more detailed.
@@ -72,7 +69,7 @@ trap cleanup EXIT
 
 # Parse commandline options
 # If getopt returns true, noop, otherwise an error is generated
-if temp=$(getopt -o 'hVlv' -l 'help,version,list,verbose' -- "$@" 2>$tmp); then
+if temp=$(getopt -o 'hVv' -l 'help,version,verbose' -- "$@" 2>$tmp); then
     # good
     :
 else
@@ -91,10 +88,6 @@ while true; do
 	-V|--version)
 	    echo $VERSION
 	    exit
-	    ;;
-	-l|--list)
-	    DOLIST=1
-	    shift
 	    ;;
 	-v|--verbose)
 	    DOVERBOSE=1
