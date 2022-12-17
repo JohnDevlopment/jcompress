@@ -4,6 +4,34 @@ usage() {
     echo "$HELP" | head -n 2
 }
 
+die() {
+    local msg="$1"
+    local code=${2:-1}
+
+    echo "$BASENAME: $msg" >&2
+    exit $code
+}
+
+# usage: subflag <variable> <flag> [argument]
+subflag() {
+    local flag=${2:?missing flag}
+    declare -n Var=${1:?missing varname}
+
+    if bool $Var; then
+	echo $flag $3
+    else
+	echo
+    fi
+    true
+}
+
+bool() {
+    local val=${1:?no value}
+    expr $val + 1 >/dev/null || die "invalid boolean value: $val"
+    test $val -ne 0 && return `true`
+    false
+}
+
 declare -r BASENAME=${0##*/}
 declare -r VERSION="$BASENAME [VERSION]"
 
@@ -27,6 +55,7 @@ Options:
 	      The output will be more detailed.
 EOF
 	)
+DOVERBOSE=0
 
 tmp=$(mktemp)
 trap "rm $tmp" EXIT
@@ -85,33 +114,55 @@ fi
 
 case "$archive" in
     *.zip)
-	unzip "$archive"
+	verbose=$(subflag DOVERBOSE -v)
+	unzip $verbose "$archive"
 	;;
     *.tar.gz|*.tgz)
-	tar xzf "$archive"
+	verbose=$(subflag DOVERBOSE v)
+	if which unpigz > /dev/null; then
+	    unpigz -c "$archive" | tar x${verbose}f - || die "failed to decompress $archive"
+	else
+	    tar xz${verbose}f "$archive"
+	fi
 	;;
     *.tar.bz2|*.tbz2)
-	tar xjf "$archive"
+	verbose=$(subflag DOVERBOSE v)
+	if which pbzip2 > /dev/null; then
+	    pbzip2 -cd "$archive" | tar x${verbose}f - || die "failed to decompress $archive"
+	else
+	    tar xj${verbose}f "$archive"
+	fi
 	;;
     *.tar.xz)
-	tar xJf "$archive"
+	verbose=$(subflag DOVERBOSE v)
+	tar xJ${verbose}f "$archive"
 	;;
     *.tar.7z)
-	7za x -so "$archive" | tar xf -
+	verbose=$(subflag DOVERBOSE v)
+	7za x -so "$archive" | tar x${verbose}f -
 	;;
     *.gz)
-	gunzip "$archive"
+	cmd=gunzip
+	which unpigz > /dev/null && cmd=unpigz
+	verbose=$(subflag DOVERBOSE -v)
+	$cmd $verbose "$archive"
 	;;
     *.bz2)
-	bunzip2 "$archive"
+	cmd=bunzip2
+	which pbzip2 > /dev/null && cmd=pbzip2\ -d
+	verbose=$(subflag DOVERBOSE -v)
+	$cmd $verbose "$archive"
 	;;
     *.tar)
-	tar xf "$archive"
+	verbose=$(subflag DOVERBOSE v)
+	tar x${verbose}f "$archive"
 	;;
     *.7z)
-	7z x "$archive"
+	verbose=$(subflag DOVERBOSE -bb3)
+	7z x $verbose "$archive"
 	;;
     *)
-	echo "$BASENAME: $archive not supported by extract()" >&2
-	exit 1
+	die "$archive not supported"
 esac
+
+echo "extracted $archive"
