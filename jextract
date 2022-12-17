@@ -1,9 +1,17 @@
 #!/bin/bash
 
+cleanup() {
+    rm $tmp
+    if bool $DOUSAGE; then
+	usage
+    fi
+}
+
 usage() {
     echo "$HELP" | head -n 2
 }
 
+# usage: die <message> [<code>]
 die() {
     local msg="$1"
     local code=${2:-1}
@@ -25,6 +33,7 @@ subflag() {
     true
 }
 
+# usage: bool <value>
 bool() {
     local val=${1:?no value}
     expr $val + 1 >/dev/null || die "invalid boolean value: $val"
@@ -56,9 +65,10 @@ Options:
 EOF
 	)
 DOVERBOSE=0
+DOUSAGE=0
 
 tmp=$(mktemp)
-trap "rm $tmp" EXIT
+trap cleanup EXIT
 
 # Parse commandline options
 # If getopt returns true, noop, otherwise an error is generated
@@ -100,17 +110,17 @@ while true; do
     esac
 done
 
+DOUSAGE=1
+
 # Archive not provided
 archive="$1"
 if [ -z "$archive" ]; then
-    echo "$BASENAME: missing filename" >&2
-    usage
-    exit 1
+    die "missing filename"
 elif [ ! -f "$archive" ]; then
-    echo "$BASENAME: $archive does not exist" >&2
-    usage
-    exit 1
+    die "$archive does not exist"
 fi
+
+DOUSAGE=0
 
 case "$archive" in
     *.zip)
