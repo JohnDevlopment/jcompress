@@ -1,7 +1,9 @@
 #!/bin/bash
 
+declare -r PKGNAME=jcompress
+
 cleanup() {
-    rm -rf $dir $file packages/$file 2> /dev/null
+    rm -rf $dir 2> /dev/null
 }
 
 clear() {
@@ -33,8 +35,11 @@ if [ -z "$version" ]; then
     exit 1
 fi
 
-file=jcompress-$version.tar.gz
-dir=packages/jcompress-$version
+# Source files
+read -ra SRC < <(cat INSTALL.in | tr "\n" " ")
+
+# Root directory of debian package
+dir=packages/${PKGNAME}-$version
 
 # Past this point, any errors will cause the script to exit.
 # In that case, all files/directories created herein will be deleted
@@ -42,12 +47,15 @@ echo
 set -e
 trap cleanup ERR
 
-#./jcompress -m tar.gz $file *
+# Create directory structure
+mkdir -vp $dir
 
-mkdir -p $dir
+# Compress source files
+./jcompress -mv tar.gz ${dir}.tar.gz ${SRC[@]}
 
-cp -v -t $dir jcompress jextract jcompress.1
+# Copy source files to $dir
+cp -vt $dir "${SRC[@]}"
 
 echo "
 Finished! Now go into $dir and type this in:
-\$ dh_make -s -c gpl3 --createorig"
+\$ debmake -b ':sh'"
