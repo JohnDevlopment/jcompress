@@ -131,6 +131,7 @@ alias usage='echo; echo "$USAGE" | head -n 2 >&2'
 password=0
 dryrun=1
 verbose=1
+movefiles=0
 
 # Get option list
 if ! temp=$(getopt -n $BASENAME -o 'hrVMm:v' -l 'mode:,move,help,use-pigz,use-pbzip2,recursive,password,dry-run,version,verbose' -- "$@"); then
@@ -251,9 +252,9 @@ case "$mode" in
 	if bool $temp; then
 	    password=--encrypt
 	fi
-	if bool ${movefiles:-0}; then
-	    movefiles='--move'
-	fi
+
+	movefiles=$(subflag movefiles --move)
+
 	cmdline=(zip -T $movefiles $password $recursive "$archive" "$@")
 	;;
     7z)
@@ -267,11 +268,15 @@ case "$mode" in
 	    password="-p"$(_getpassword)
 	    [ $? -eq 0 ] || exit 1
 	fi
-	test ${movefiles:-0} && movefiles='-sdel'
+
+	# TODO: does $movefiles have a default value?
+	movefiles=$(subflag movefiles -sdel)
+
 	cmdline=($cmdprefix a $movefiles $password "$archive" "$@")
 	;;
     tgz|tar.gz)
-	bool ${movefiles:-0} && movefiles='--remove-files'
+	movefiles=$(subflag movefiles --remove-files)
+
 
 	if [ -n "$COMPRESSOR" ]; then
 	    cmdline=(tar -c $movefiles $COMPRESSOR -f "$archive" "$@")
@@ -280,7 +285,7 @@ case "$mode" in
 	fi
 	;;
     tbz2|tar.bz2)
-	bool ${movefiles:-0} && movefiles='--remove-files'
+	movefiles=$(subflag movefiles --remove-files)
 
 	if [ -n "$COMPRESSOR2" ]; then
 	    cmdline=(tar -c $movefiles $COMPRESSOR2 -f "$archive" "$@")
@@ -289,7 +294,7 @@ case "$mode" in
 	fi
 	;;
     t7z|tar.7z)
-	if bool ${movefiles:-0}; then
+	if bool $movefiles; then
 	    special7z_deletesources=1
 	    unset movefiles
 	fi
