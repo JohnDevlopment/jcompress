@@ -130,8 +130,11 @@ alias usage='echo; echo "$USAGE" | head -n 2 >&2'
 # Option defaults
 password=0
 dryrun=1
-verbose=1
+verbose=0
 movefiles=0
+mode=
+pigzcompressor=
+pbzip2compressor=
 
 # Get option list
 if ! temp=$(getopt -n $BASENAME -o 'hrVMm:v' -l 'mode:,move,help,use-pigz,use-pbzip2,recursive,password,dry-run,version,verbose' -- "$@"); then
@@ -156,7 +159,7 @@ while true; do
 	    exit
 	    ;;
 	--use-pigz)
-	    COMPRESSOR='--use-compress-program=pigz'
+	    pigzcompressor='--use-compress-program=pigz'
 	    shift
 	    ;;
 	--use-pbzip2)
@@ -223,8 +226,12 @@ elif [ -z "${archive#*.}" ]; then
     archive="$temp.$mode"
 fi
 
-# Password mode for certain compressed tar archives
-if [[ $mode =~ t(ar\.)?[gb]z$ ]]; then
+# Shared options between compressed tar archives
+if [[ $mode =~ t(ar\.)?(gz|bz2)$ ]]; then
+    verboseOpt=$(subflag verbose v)
+    movefiles=$(subflag movefiles --remove-files)
+
+    # Password mode for certain compressed tar archives
     if bool $password; then
 	if [ -z "$JC_GPGPUBKEY" ]; then
 	    echo "$BASENAME: no public key defined in \$JC_GPGPUBKEY" >&2
@@ -235,7 +242,7 @@ if [[ $mode =~ t(ar\.)?[gb]z$ ]]; then
 fi
 
 # Detects if --use-pigz was passed with a format that isn't tgz
-if [[ ! $mode =~ t(ar\.)?gz$ && -v COMPRESSOR ]]; then
+if [[ ! $mode =~ t(ar\.)?gz$ && -n "$pigzcompressor" ]]; then
     echo "$BASENAME: --use-pigz is not supported by $mode files" >&2
 fi
 
@@ -255,7 +262,9 @@ case "$mode" in
 
 	movefiles=$(subflag movefiles --move)
 
-	cmdline=(zip -T $movefiles $password $recursive "$archive" "$@")
+	verboseOpt=$(subflag verbose -v)
+
+	cmdline=(zip -T $verboseOpt $movefiles $password $recursive "$archive" "$@")
 	;;
     7z)
 	cmdprefix=7zr
@@ -269,36 +278,28 @@ case "$mode" in
 	    [ $? -eq 0 ] || exit 1
 	fi
 
-	# TODO: does $movefiles have a default value?
 	movefiles=$(subflag movefiles -sdel)
 
 	cmdline=($cmdprefix a $movefiles $password "$archive" "$@")
 	;;
     tgz|tar.gz)
-	movefiles=$(subflag movefiles --remove-files)
+	test -z "$pigzcompressor" && z=z
 
-
-	if [ -n "$COMPRESSOR" ]; then
-	    cmdline=(tar -c $movefiles $COMPRESSOR -f "$archive" "$@")
-	else
-	    cmdline=(tar -cz $movefiles -f "$archive" "$@")
-	fi
+	cmdline=(tar -c${verboseOpt}$z $movefiles $pigzcompressor -f "$@")
 	;;
     tbz2|tar.bz2)
-	movefiles=$(subflag movefiles --remove-files)
+	test -z "$pbzip2compressor" && j=j
 
-	if [ -n "$COMPRESSOR2" ]; then
-	    cmdline=(tar -c $movefiles $COMPRESSOR2 -f "$archive" "$@")
-	else
-	    cmdline=(tar -cj $movefiles -f "$archive" "$@")
-	fi
+	cmdline=(tar -c${verboseOpt}$j $movefiles $pbzip2compressor -f "$@")
 	;;
     t7z|tar.7z)
 	if bool $movefiles; then
 	    special7z_deletesources=1
 	    unset movefiles
 	fi
-	cmdline=(tar -cf - "$@" "|" 7za a -si "$archive")
+	verboseTar=$(subflag verbose v)
+	verbose7z=$(subflag verbose -bb3)
+	cmdline=(tar -c${verboseTar}f - "$@" "|" 7za a $verbose7z -si "$archive")
 	;;
     *)
 	echo -e "$modeerror\n\n$USAGE" >&2
