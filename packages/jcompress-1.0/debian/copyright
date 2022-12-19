@@ -2,8 +2,6 @@ Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: jcompress
 Upstream-Contact: johndevlopment7@gmail.com
 Source: https://github.com/JohnDevlopment/jcompress
-#
-# Please double check copyright with the licensecheck(1) command.
 
 Files:     install.sh
            jcompress
@@ -13,12 +11,6 @@ Files:     install.sh
 Copyright: 2020 John Russell
 License:   gpl3
 
-#----------------------------------------------------------------------------
-# Files marked as NO_LICENSE_TEXT_FOUND may be covered by the following
-# license/copyright files.
-
-#----------------------------------------------------------------------------
-# License file: LICENSE
                      GNU GENERAL PUBLIC LICENSE
                         Version 3, 29 June 2007
  .

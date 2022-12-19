@@ -1,6 +1,6 @@
 jcompress (1.0-1) UNRELEASED; urgency=low
 
-  * Initial release. Closes: #nnnn
-    <nnnn is the bug number of your ITP>
+  * Initial release.
+  * Added install files.
 
- -- John Russell <johndevlopment7@gmail.com>  Sun, 18 Dec 2022 23:32:52 -0600
+ -- John Russell <johndevlopment7@gmail.com>  Mon, 19 Dec 2022 00:08:16 -0600
