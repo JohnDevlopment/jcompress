@@ -13,11 +13,18 @@ clear() {
 
 usage() {
     echo \
-	"usage: make_debian_package.sh
+	"usage: make_debian_package.sh [-d]
        make_debian_package.sh clear
        make_debian_package.sh -h|--help"
     exit
 }
+
+echo=
+if [ "$1" = "-d" ]; then
+    shift
+    echo=echo
+    $echo "debug mode activated" || exit 1
+fi
 
 # -h or --help
 if [[ $1 =~ -h|--help ]]; then usage; fi
@@ -48,13 +55,13 @@ set -e
 trap cleanup ERR
 
 # Create directory structure
-mkdir -vp $dir
+$echo mkdir -vp $dir
 
 # Compress source files
-./jcompress -mv tar.gz ${dir}.tar.gz ${SRC[@]}
+$echo ./jcompress --verbose --mode tar.gz ${dir}.tar.gz "${SRC[@]}"
 
 # Copy source files to $dir
-cp -vt $dir "${SRC[@]}"
+$echo cp -vt $dir "${SRC[@]}"
 
 echo "
 Finished! Now go into $dir and type this in:
