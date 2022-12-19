@@ -285,12 +285,12 @@ case "$mode" in
     tgz|tar.gz)
 	test -z "$pigzcompressor" && z=z
 
-	cmdline=(tar -c${verboseOpt}$z $movefiles $pigzcompressor -f "$@")
+	cmdline=(tar -c${verboseOpt}$z $movefiles $pigzcompressor -f "$archive" "$@")
 	;;
     tbz2|tar.bz2)
 	test -z "$pbzip2compressor" && j=j
 
-	cmdline=(tar -c${verboseOpt}$j $movefiles $pbzip2compressor -f "$@")
+	cmdline=(tar -c${verboseOpt}$j $movefiles $pbzip2compressor -f "$archive" "$@")
 	;;
     t7z|tar.7z)
 	if bool $movefiles; then
