@@ -1,0 +1,2 @@
+scripts/jcompress usr/bin
+scripts/jextract usr/bin

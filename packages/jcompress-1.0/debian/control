@@ -1,0 +1,21 @@
+Source: jcompress
+Section: utils
+Priority: optional
+Maintainer: John Russell <johndevlopment7@gmail.com>
+Build-Depends: debhelper-compat (= 12)
+Standards-Version: 4.5.0
+Vcs-Browser: https://github.com/JohnDevlopment/jcompress
+Vcs-Git: https://github.com/JohnDevlopment/jcompress -b debian [packages]
+
+Package: jcompress
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}, zip, gpg, p7zip-full
+Suggests: pigz, pbzip2
+Description: Convienent archive manipulation script, written in Bash.
+ JCompress is a script that wraps around several archive programs. This
+ script does not support *every* option under sun, but it does provide
+ a convienent way to do common archival operations.
+ Currently this supports 7z, zip, tar.gz, tar.bz2, tar.7z, and tar.xz formats.
+ .
+ This package contains jcompress, jextract, and their respective documentation.
