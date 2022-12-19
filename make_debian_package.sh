@@ -43,7 +43,22 @@ if [ -z "$version" ]; then
 fi
 
 # Source files
-read -ra SRC < <(cat INSTALL.in | tr "\n" " ")
+bin=()
+man=()
+other=()
+
+while read line; do
+    case $line in
+	*.[1-9])
+	    man+=($line)
+	    ;;
+	j*)
+	    bin+=($line)
+	    ;;
+	*)
+	    other+=($line)
+    esac
+done < <(cat INSTALL.in)
 
 # Root directory of debian package
 dir=packages/${PKGNAME}-$version
@@ -55,13 +70,15 @@ set -e
 trap cleanup ERR
 
 # Create directory structure
-$echo mkdir -vp $dir
+$echo mkdir -vp $dir/{,man,scripts}
 
 # Compress source files
-$echo ./jcompress --verbose --mode tar.gz ${dir}.tar.gz "${SRC[@]}"
+$echo ./jcompress --verbose --mode tar.gz ${dir}.tar.gz "${bin[@]}" "${man[@]}" "${other[@]}"
 
 # Copy source files to $dir
-$echo cp -vt $dir "${SRC[@]}"
+$echo cp -vt $dir/scripts "${bin[@]}"
+$echo cp -vt $dir/man "${man[@]}"
+$echo cp -vt $dir "${other[@]}"
 
 echo "
 Finished! Now go into $dir and type this in:
