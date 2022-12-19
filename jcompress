@@ -129,7 +129,7 @@ alias usage='echo; echo "$USAGE" | head -n 2 >&2'
 
 # Option defaults
 password=0
-dryrun=1
+dryrun=0
 verbose=0
 movefiles=0
 mode=
