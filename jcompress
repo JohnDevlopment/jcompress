@@ -2,6 +2,7 @@
 
 shopt -s expand_aliases
 
+# usage: die <message> [<code>]
 die() {
     local msg="$1"
     local code=${2:-1}
@@ -10,6 +11,20 @@ die() {
     exit $code
 }
 
+# usage: subflag <variable> <flag> [argument]
+subflag() {
+    local flag=${2:?missing flag}
+    declare -n Var=${1:?missing varname}
+
+    if bool $Var; then
+	echo $flag $3
+    else
+	echo
+    fi
+    true
+}
+
+# usage: bool <value>
 bool() {
     local val=${1:?no value}
     expr $val + 1 >/dev/null || die "invalid boolean value: $val"
@@ -86,6 +101,10 @@ Options:
               Encrypt the archive with a password. What happens
               exactly will depend on the format.
 
+       -v
+       --verbose
+	      Print the output of the command.
+
        -r
        --recursive
               Travel subdirectories recursively.
@@ -93,6 +112,10 @@ Options:
        -M
        --move Move the files into the archive. Actually, the files are
        	      simply deleted after copying them.
+
+       --dry-run
+              Do not take any action; rather, print out the commandline
+	      resulting from the command.
 
 Environment Variables:
        JC_GPGPUBKEY
@@ -106,10 +129,11 @@ alias usage='echo; echo "$USAGE" | head -n 2 >&2'
 
 # Option defaults
 password=0
-debug=
+dryrun=1
+verbose=1
 
 # Get option list
-if ! temp=$(getopt -n $BASENAME -o 'hrVMm:' -l 'mode:,move,help,use-pigz,use-pbzip2,recursive,password,debug,version' -- "$@"); then
+if ! temp=$(getopt -n $BASENAME -o 'hrVMm:v' -l 'mode:,move,help,use-pigz,use-pbzip2,recursive,password,dry-run,version,verbose' -- "$@"); then
     usage
     exit 1
 fi
@@ -146,12 +170,16 @@ while true; do
 	    password=1
 	    shift
 	    ;;
-	--debug)
-	    debug=1
+	--dry-run)
+	    dryrun=1
 	    shift
 	    ;;
 	-M|--move)
 	    movefiles=1
+	    shift
+	    ;;
+	-v|--verbose)
+	    verbose=1
 	    shift
 	    ;;
 	--)
@@ -272,7 +300,7 @@ case "$mode" in
 	exit 1
 esac
 
-if bool ${debug:-0}; then
+if bool $dryrun; then
     echo "${cmdline[@]}"
     if [ -v gpgcommand ]; then
 	echo "${gpgcommand[@]}"
