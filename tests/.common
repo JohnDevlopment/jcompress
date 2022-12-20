@@ -1,0 +1,92 @@
+# Source this file to get common unit test functions
+
+export NOTRAP=
+
+_error() {
+    if [ -n "$NOTRAP" ]; then
+	NOTRAP=
+	return
+    fi
+    local msg="error from last command: \$ $2\n$TESTNAME, line $1"
+    die "$msg"
+}
+
+# die <message> [<code>]
+#   Print <message> to stderr and exit
+#   with code <code>. <code> defaults to 1
+die() {
+    LASTCOMMAND=$(cat $HISTFILE | tail -n 1)
+    local msg="${1:-undefined message}"
+    echo "$TESTNAME: $msg" >&2
+    exit ${2:-1}
+}
+
+# assert <boolean-test> [--msg <message>]
+assert() {
+    local tst=()
+    local opt="$1"
+
+    while [ -n "$opt" ]; do
+	if [ "$opt" = "--msg" ]; then
+	    # Get argument to --msg, shift parameters
+	    shift
+	    local msg="$1"
+	    if [ -z "$msg" ]; then
+		die "assert: missing argument to '--msg'"
+	    fi
+	else
+	    tst+=("$1")
+	fi
+
+	shift
+	opt="$1"
+    done
+
+    # Evaluate test
+    if eval test "${tst[@]}"; then
+	:
+    else
+	prefix="assertion failed: '${tst[@]}'"
+	die "${prefix}${msg:+: }$msg"
+    fi
+}
+
+# echo [<same-args-as-echo>...]
+#   Calls echo with the provided arguments
+#   only if $VERBOSE is set
+vecho() {
+    local opts=
+    local OPT=
+    local pfx=
+
+    while getopts :neE OPT; do
+	case $OPT in
+	    n|e|E)
+		pfx=
+		if [ -z "$opts" ]; then
+		    pfx=-
+		fi
+		opts="$pfx$opts$OPT"
+		;;
+	    *)
+		echo "usage: $0 [-neE} [--] ARGS..." >&2
+		return 2
+	esac
+    done
+    shift $(( OPTIND - 1 ))
+    OPTIND=1
+
+    if [ ${VERBOSE:-0} -eq 1 ]; then
+	echo $opts "... $TESTNAME:" "$@"
+    fi
+}
+
+# Hooks
+trap '_error ${LINENO} "$BASH_COMMAND"' ERR
+
+# Enable history
+HISTFILE=$PWD/tests/.bash_history_$TESTNAME
+truncate --size 0 $HISTFILE
+shopt -s cmdhist
+set -H
+set -o history
