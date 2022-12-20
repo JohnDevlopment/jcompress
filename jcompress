@@ -60,10 +60,10 @@ declare -r BASENAME=${0##*/}
 declare -r VERSION="$BASENAME [VERSION]"
 
 declare -r USAGE=$(cat <<EOF
-usage: $BASENAME [OPTIONS] [-m|--mode MODE] [--] ARCHIVE FILE|DIR...
+usage: $BASENAME [OPTIONS] [-f|--format FORMAT] [--] ARCHIVE FILE|DIR...
        $BASENAME -h|--help
 
-Valid Modes:
+Valid Formats:
        zip
        7z
        tgz
@@ -85,8 +85,9 @@ Options:
        --version
               Print the program version and exit.
 
-       -m mode
-       --mode Specifiy the mode (or format) of the archive. If
+       -f format
+       --format
+              Specifiy the format of the archive. If
               omitted, the archive's extension is used.
 
        --use-pigz
@@ -132,7 +133,7 @@ password=0
 dryrun=0
 verbose=0
 movefiles=0
-mode=
+format=
 pigzcompressor=
 pbzip2compressor=
 
@@ -145,9 +146,9 @@ eval set -- "$temp"
 
 while true; do
     case "$1" in
-	-m|--mode)
-	    mode="$2"
-	    modeerror="invalid mode: $mode"
+	-f|--format)
+	    format="$2"
+	    formaterror="invalid format: $format"
 	    shift 2
 	    ;;
 	-h|--help)
@@ -217,17 +218,17 @@ esac
 archive="$1"
 shift
 
-# If MODE is not specified, use the archive name
-if [ -z "$mode" ]; then
-    mode="${archive#*.}"
-    modeerror="invalid or missing extension: $mode"
+# If FORMAT is not specified, use the archive name
+if [ -z "$format" ]; then
+    format="${archive#*.}"
+    formaterror="invalid or missing extension: $format"
 elif [ -z "${archive#*.}" ]; then
     temp="${archive%%.*}"
-    archive="$temp.$mode"
+    archive="$temp.$format"
 fi
 
 # Shared options between compressed tar archives
-if [[ $mode =~ t(ar\.)?(gz|bz2)$ ]]; then
+if [[ $format =~ t(ar\.)?(gz|bz2)$ ]]; then
     verboseOpt=$(subflag verbose v)
     movefiles=$(subflag movefiles --remove-files)
 
@@ -242,17 +243,17 @@ if [[ $mode =~ t(ar\.)?(gz|bz2)$ ]]; then
 fi
 
 # Detects if --use-pigz was passed with a format that isn't tgz
-if [[ ! $mode =~ t(ar\.)?gz$ && -n "$pigzcompressor" ]]; then
-    echo "$BASENAME: --use-pigz is not supported by $mode files" >&2
+if [[ ! $format =~ t(ar\.)?gz$ && -n "$pigzcompressor" ]]; then
+    echo "$BASENAME: --use-pigz is not supported by $format files" >&2
 fi
 
 # Detects if --use-pbzip2 was passed with a format that isn't tgz
-if [[ ! $mode =~ t(ar\.)?bz2$ && -v COMPRESSOR2 ]]; then
-    echo "$BASENAME: --use-pbzip2 is not supported by $mode files" >&2
+if [[ ! $format =~ t(ar\.)?bz2$ && -v COMPRESSOR2 ]]; then
+    echo "$BASENAME: --use-pbzip2 is not supported by $format files" >&2
 fi
 
-# Which mode?
-case "$mode" in
+# Which format?
+case "$format" in
     zip)
 	temp=$password
 	password=
@@ -302,7 +303,7 @@ case "$mode" in
 	cmdline=(tar -c${verboseTar}f - "$@" "|" 7za a $verbose7z -si "$archive")
 	;;
     *)
-	echo -e "$modeerror\n\n$USAGE" >&2
+	echo -e "$formaterror\n\n$USAGE" >&2
 	exit 1
 esac
 
