@@ -302,12 +302,19 @@ archive="$1"
 shift
 
 # If FORMAT is not specified, use the archive name
+ext=$(get_extension "$archive")
+
 if [ -z "$format" ]; then
-    format="${archive#*.}"
-    formaterror="invalid or missing extension: $format"
-elif [ -z "${archive#*.}" ]; then
-    temp="${archive%%.*}"
-    archive="$temp.$format"
+    format=$ext
+    formaterror="invalid or missing extension: $ext"
+elif [ -z "$ext" ]; then
+    if test -z "$format"; then
+	formaterror="missing --format option"
+	format=missing
+    else
+	archive="$archive.$format"
+	formaterror="invalid format: $format"
+    fi
 fi
 
 # Shared options between compressed tar archives
