@@ -152,7 +152,26 @@ pigzcompressor=
 pbzip2compressor=
 
 # Get option list
-if ! temp=$(getopt -n $BASENAME -o 'hrVMm:v' -l 'mode:,move,help,use-pigz,use-pbzip2,recursive,password,dry-run,version,verbose' -- "$@"); then
+longopts=(
+    # Options that make the program quit
+    help
+    version
+
+    # Output options
+    format:
+    password
+    dry-run
+    verbose
+
+    # Input options
+    move
+    recursive
+
+    # Compression options
+    use-pigz
+    use-pbzip2
+)
+longopts=$(printf "%s," "${longopts[@]}" | sed 's/,$//')
 
 ### DEBUG: Special debug commands for use with unit tests (remove on release build)
 case "$1" in
@@ -202,6 +221,7 @@ EOF
 esac
 ###
 
+if ! temp=$(getopt -n $BASENAME -o 'hrVMm:v' -l "$longopts" -- "$@"); then
     usage
     exit 1
 fi
