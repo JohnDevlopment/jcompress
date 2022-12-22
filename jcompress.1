@@ -1,31 +1,67 @@
-.TH JCOMPRESS "1" "December 2022" "jcompress 1.0" "User Commands"
+.TH JCOMPRESS "1" "December 2022" "[VERSION]" "User Commands"
 .
 .SH NAME
 jcompress \- all-in-one compression script
 .
 .SH SYNOPSIS
-usage: jcompress [OPTIONS] [-m|--mode MODE] [--] ARCHIVE FILE|DIR...
-       jcompress \fB-h\fR|--help
+jcompress [\fB-hMrVv\fR] [--longoption ...] [\fB-f\fR \fIFORMAT\fR] [--] \fIarchive\fR [\fIFILE|DIR\fR ...]
 .
 .SH DESCRIPTION
-jcompress is a convenvience script for interfacing with different archiving programs.
-The options listed below are translated to their counterparts in the selected archive program.
+.I jcompress
+is a script that wraps around several different archival programs.
+Options passed to jcompress are translated to their corresponding options,
+in the selected program.
+Some options have custom implementations depending on the format used.
+Such options are described below.
 .
-.IP "Valid Extensions:"
-zip (.zip),
-7z (.7z),
-tgz (.tgz, .tar.gz),
-tbz2 (.tbz2, .tar.bz2),
-t7z (.t7z, .tar.7z)
-.
-.IP "Valid Modes:"
-The
-.B --mode
-option accepts any of the valid extensions as argument, minus the leading dot.
-For example, `--mode tar.gz' is a valid format.
+.SS "Supported formats"
+\"List start
+.TP
+.B zip
+Uses the
+.B zip
+program for archiving zip files.
+Common and well know format.
+Valid extension is zip.
+.TP
+.B 7z
+Uses
+.BR 7zr " or " 7za
+depending on the options passed.
+Boasts a greater compression ration than zip.
+Valid extension is 7z.
+.TP
+.BR tar.gz / tgz
+Uses
+.B tar
+with gzip compression.
+Accepts the
+.B --use-pigz
+option.
+This option requires pigz to be installed in order to work.
+Valid extensions are: tar.gz, tgz.
+.TP
+.BR tar.bz2 / tbz2
+Uses
+.B tar
+with bzip2 compression.
+Accepts the
+.B --use-pbzip2
+option.
+This option requires pbzip2 to be installed in order to work.
+Valid extensions are: tar.bz2, tbz2.
+.TP
+.BR tar.7z / t7z
+Uses
+.B tar
+with 7zip compression.
+jcompress pipes the output of tar into \fB7za\fR, which then creates the 7z file.
+All options available to 7z files are available here as well.
+Valid extensions are: tar.7z, t7z.
+\"List end
 .
 .SH OPTIONS
-Options that are mandatory for short options are mandatory for long options as well.
+Arguments that are mandatory for short options are mandatory for long options as well.
 .
 .TP
 .B -h
@@ -40,31 +76,50 @@ Display this help message and exit.
 Print the program version and exit.
 .
 .TP
-.BI -m\~ mode
+.BI -f\~ format
 .TQ
-.B --mode
-Specifiy the mode (or format) of the archive.
-If omitted, the archive's extension is used.
+.B --format
+Specifiy the format of the archive.
+If this option is omitted, the archive's extension is used.
+This option is required if
+.I archive
+has no extension or it is not a valid extension.
 .
 .TP
 .B --use-pigz
-For the tgz format, this specifies pigz as the compression program to use.
+Only available to tar.gz and tgz files.
+Specifies
+.B pigz
+as the compression program to use.
+In order for this option to work, pigz must be installed.
 .
 .TP
 .B --use-pbzip2
-For the tbz2 format, this specifies pbzip2 as the compression program to use.
+Only available to tar.bz2 and tbz2 files.
+Specifies
+.B pbzip2
+as the compression program to use.
+In order for this option to work, pbzip2 must be installed.
 .
 .TP
 .B --password
 Encrypt the archive with a password.
 What happens exactly will depend on the format.
+See
+.B PASSWORDS
+below for details.
 .
 .TP
 .B -r
 .TQ
 .B --recursive
 Travel subdirectories recursively.
-This option is ignored for some programs, like 7z.
+This option is ignored for some programs.
+In \fB7z\fR, directory recursion is the default behavior, so this option is redundant.
+Adding to that, the manual for \fB7z\fR says not to use its correspondant flag;
+hence it is ignored.
+Similarly, \fBtar\fR recurses directories by default,
+so this option is ignored for all tar-derived formats.
 .
 .TP
 .B -M
@@ -72,22 +127,48 @@ This option is ignored for some programs, like 7z.
 .B --move
 Move the files into the archive.
 Actually, the files are simply deleted after copying them.
+.B jcompress
+implements this option for tar.7z files, since \fB-sdel\fR doesn't actually work in that instance.
+.
+.SH "EXIT STATUS"
+.TP
+.B 0
+Successful program execution.
+.TP
+.B 1
+Usage, syntax, or configuration error.
+.TP
+.B 2
+Operational error.
+.TP
+.B 3
+A child process returned a nonzero exit status.
 .
 .SH PASSWORDS
-What --password does depends on the archive type.
-Zip files have the -e option, which prompts for user input.
-Tar-derived files (e.g., .tar.gz) are encrypted using gpg.
-For it to work, the user must set
-.B JC_GPGPUBKEY
-to the public key they want to use.
-The actual command used is:
+What
+.B --password
+does depends on the archive type.
+Zip files have the
+.B -e
+option, which prompts for user input.
+.B 7z
+has the \fB-p\fR option, but it reads the password from the command line.
+To circumvent this,
+.B jcompress
+has its own function to prompt the user for a password,
+and their input is passed to this option as normal.
+(tar.7z files follow the same protocol).
+Tar-derived files (e.g., .tar.gz) are encrypted using
+.BR gpg .
+For
+.B gpg
+to work, the environment variable JC_GPGPUBKEY must be set to a public key.
+For reference, the actual command used is:
 .IP
 gpg --encrypt --recipient $JC_GPGPUBKEY "$archive" && rm -v "$archive"
 .
 .PP
-7z files have the -p option to set a password, but the password is specified directly on the command line.
-jcompress actually defines its own function to prompt the user for a password, and it is passed to this option.
-For reference, the commandline to encrypt a 7z file with a password looks like this:
+For reference, the command line to encrypt a 7z file with a password looks like this:
 .IP
 7z a -pPASSWORD archive.7z ...
 .
