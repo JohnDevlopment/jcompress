@@ -153,6 +153,55 @@ pbzip2compressor=
 
 # Get option list
 if ! temp=$(getopt -n $BASENAME -o 'hrVMm:v' -l 'mode:,move,help,use-pigz,use-pbzip2,recursive,password,dry-run,version,verbose' -- "$@"); then
+
+### DEBUG: Special debug commands for use with unit tests (remove on release build)
+case "$1" in
+    debug-get-long-options|dglo)
+	echo -n "$longopts" | sed -E 's/(.*),$/\1/'
+	exit
+	;;
+    debug-check-archive|dca)
+	fmt=$2
+	if [ -z "$fmt" ]; then
+	    echo "required argument: format" >&2
+	    exit 1
+	fi
+
+	output=$($0 --format $fmt --dry-run archive test/{1,2,3}.txt)
+	awkscript=$(cat <<"EOF"
+{
+      for (i = 1; i <= NF; i++) {
+	  subs = "archive\\.[a-z]*"
+	  x = match($i, subs)
+	  if (x > 0)
+	     print $i
+      }
+}
+EOF
+		 )
+
+	cmd=(echo "$output")
+	if [ "$3" = "--awk" ]; then
+	    cmd+=("|" awk "'$awkscript'")
+	fi
+
+	trap "rm -f 'archive.$fmt'" EXIT
+
+	eval "${cmd[@]}"
+	exit
+	;;
+    debug-get-extension|dbe)
+	get_extension "${2:?provide a filename}" || {
+	    echo "failed to get extension from $2" >&2
+	    exit 1
+	}
+	exit
+	;;
+    *)
+	:
+esac
+###
+
     usage
     exit 1
 fi
