@@ -2,6 +2,20 @@
 
 shopt -s expand_aliases
 
+get_extension() {
+    # Look for tar.*/t* extensions
+    if [[ $1 =~ \.(t(ar\.)?([g7]z|bz2))$ ]]; then
+	echo "${BASH_REMATCH[1]}"
+	return
+    elif [[ $1 =~ \.(zip|7z) ]]; then
+	echo "${BASH_REMATCH[1]}"
+	return
+    fi
+
+    echo -n
+    false
+}
+
 # usage: die <message> [<code>]
 die() {
     local msg="$1"
