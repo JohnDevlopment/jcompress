@@ -49,3 +49,5 @@ FILEOPENED=0
 
 rm -rfv "${filestoremove[@]}"
 SUCCESS=1
+
+mandb | tail -n 4
