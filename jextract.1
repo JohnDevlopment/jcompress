@@ -1,0 +1,34 @@
+.TH JEXTRACT "1" "December 2022" "[VERSION]" "User Commands"
+.
+.SH NAME
+jextract \- all-on-one decompression script
+.
+.SH SYNOPSIS
+jextract [\fB-hVv\fR] \fIarchive\fR
+.
+.SH DESCRIPTION
+.I jextract
+is a script that wraps around several archive-manipulating programs such as zip.
+The proper command is chosen to unpack \fIarchive\fR.
+.
+.SH OPTIONS
+.TP
+.B -h
+.TQ
+.B --help
+Print a help message and exit.
+.
+.TP
+.B -V
+.TQ
+.B --version
+Print the program version and exit.
+.
+.TP
+.B -V
+.TQ
+.B --verbose
+Verbosely show the files being extracted.
+.
+.SH "SEE ALSO"
+.BR 7z (1),\~ tar (1),\~ zip (1),\~ pigz (1),\~ pbzip2 (1),\~ gpg (1),\~ jcompress (1)
