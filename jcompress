@@ -41,7 +41,7 @@ subflag() {
 # usage: bool <value>
 bool() {
     local val=${1:?no value}
-    expr $val + 1 >/dev/null || die "invalid boolean value: $val"
+    expr $val + 1 >/dev/null || die "invalid boolean value: $val" 2
     test $val -ne 0 && return `true`
     false
 }
@@ -74,8 +74,7 @@ declare -r BASENAME=${0##*/}
 declare -r VERSION="$BASENAME [VERSION]"
 
 declare -r USAGE=$(cat <<EOF
-usage: $BASENAME [OPTIONS] [-f|--format FORMAT] [--] ARCHIVE FILE|DIR...
-       $BASENAME -h|--help
+usage: $BASENAME [-hMrVv] [--longoption ...] [-f FORMAT] [--] archive [file|dir ...]
 
 Valid Formats:
        zip
@@ -182,8 +181,7 @@ case "$1" in
     debug-check-archive|dca)
 	fmt=$2
 	if [ -z "$fmt" ]; then
-	    echo "required argument: format" >&2
-	    exit 1
+	    die "required argument: format"
 	fi
 
 	output=$($0 --format $fmt --dry-run archive test/{1,2,3}.txt)
@@ -206,14 +204,16 @@ EOF
 
 	trap "rm -f 'archive.$fmt'" EXIT
 
-	eval "${cmd[@]}"
+	eval "${cmd[@]}" || die "failed to evaluate command: \$ ${cmd[@]}" 2
 	exit
 	;;
     debug-get-extension|dbe)
-	get_extension "${2:?provide a filename}" || {
-	    echo "failed to get extension from $2" >&2
-	    exit 1
-	}
+	file="$2"
+	if [ -z "$file" ]; then
+	    die "missing file argument"
+	fi
+
+	get_extension "file" || die "failed to get extension from $file" 2
 	exit
 	;;
     *)
@@ -275,9 +275,7 @@ while true; do
 	    break
 	    ;;
 	*)
-	    echo "$BASENAME: internal error" >&2
-	    usage
-	    exit 1
+	    die "internal error\n\n`usage`" 2
 	    ;;
     esac
 done
@@ -285,14 +283,10 @@ done
 # Posititional parameters
 case $# in
     0)
-	echo -e "missing filename" >&2
-	usage
-	exit 1
+	die "missing filename\n\n`usage`"
 	;;
     1)
-	echo -e "no files to insert" >&2
-	usage
-	exit 1
+	die "no files to insert\n\n`usage`"
 	;;
     *)
 
@@ -325,8 +319,7 @@ if [[ $format =~ t(ar\.)?(gz|bz2)$ ]]; then
     # Password mode for certain compressed tar archives
     if bool $password; then
 	if [ -z "$JC_GPGPUBKEY" ]; then
-	    echo "$BASENAME: no public key defined in \$JC_GPGPUBKEY" >&2
-	    exit 1
+	    die "no public key defined in \$JC_GPGPUBKEY"
 	fi
 	gpgcommand=(gpg --encrypt --recipient $JC_GPGPUBKEY "$archive" "&&" rm -v "$archive")
     fi
@@ -346,13 +339,9 @@ fi
 case "$format" in
     zip)
 	temp=$password
-	password=
-	if bool $temp; then
-	    password=--encrypt
-	fi
+	password=$(subflag temp --encrypt)
 
 	movefiles=$(subflag movefiles --move)
-
 	verboseOpt=$(subflag verbose -v)
 
 	cmdline=(zip -T $verboseOpt $movefiles $password $recursive "$archive" "$@")
@@ -366,7 +355,7 @@ case "$format" in
 	if bool $temp; then
 	    cmdprefix=7za
 	    password="-p"$(_getpassword)
-	    [ $? -eq 0 ] || exit 1
+	    [ $? -eq 0 ] || die "invalid password, $password"
 	fi
 
 	movefiles=$(subflag movefiles -sdel)
@@ -393,8 +382,7 @@ case "$format" in
 	cmdline=(tar -c${verboseTar}f - "$@" "|" 7za a $verbose7z -si "$archive")
 	;;
     *)
-	echo -e "$formaterror\n\n$USAGE" >&2
-	exit 1
+	die "$formaterror\n\n$USAGE"
 esac
 
 if bool $dryrun; then
@@ -403,9 +391,9 @@ if bool $dryrun; then
 	echo "${gpgcommand[@]}"
     fi
 else
-    eval "${cmdline[@]}" || exit 1
+    eval "${cmdline[@]}" || die "failed to run command: \$ ${cmdline[@]}" 2
     if [ -v gpgcommand ]; then
-	eval "${gpgcommand[@]}"
+	eval "${gpgcommand[@]}" || die "failed to run command: \$ ${gpgcommand[@]}" 2
     fi
     # Special: tar.7z archives
     # Delete source file(s) after successful creation of archive
