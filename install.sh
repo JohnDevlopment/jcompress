@@ -42,6 +42,11 @@ die() {
     exit $code
 }
 
+cleanup() {
+    rm -rvf $tmpdir
+    finishinstall
+}
+
 # usage: fakeinstall DIR FILE...
 fakeinstall() {
     local installed=()
@@ -57,7 +62,27 @@ fakeinstall() {
     done
 }
 
+initinstall() {
+    exec 3>"$ROOTDIR/install_manifest.txt"
+    echo "Created install_manifest.txt."
+}
+
+finishinstall() {
+    if [ -v DONE ]; then return; fi
+    exec 3>&-
+    echo "Finished writing install_manifest.txt." \
+	 "That file is neccessary should you decide to uninstall this with uninstall.sh."
+    DONE=1
+
+    mandb | tail -n 4
+
+    echo -en "\nInstalled files: "
+    printf "\t%s\n" "${allinstalled[@]}"
+}
+
 # usage: install DIR FILE...
+allinstalled=()
+
 install() {
     local installed=()
     local dir="${1:?no directory}"
@@ -74,13 +99,10 @@ install() {
 	    die "failed to install $file"
 	fi
 	installed+=("$dir/${file##*/}")
+	allinstalled+=("$dir/${file##*/}")
     done
 
-    printf "%s\n" "${installed[@]}" > "$ROOTDIR/install_manifest.txt"
-    echo "installed files:"
-    printf "\t%s\n" "${installed[@]}"
-    echo "created install_manifest.txt." \
-	 "That file is neccessary should you decide to uninstall this with uninstall.sh."
+    printf "%s\n" "${installed[@]}" >&3
 }
 
 # Process commandline
@@ -135,22 +157,32 @@ tmpdir=$(mktemp -d)
 trap cleanup EXIT
 
 # Copy source files into temporary directory
-cp -v -t $tmpdir "${binfiles[@]}"
+cp -t $tmpdir "${binfiles[@]}" "${manfiles[@]}"
 
 # Substitute version string into the two files.
 version=$(cat VERSION)
-for file in "${binfiles[@]}"; do
+for file in "${binfiles[@]}" "${manfiles[@]}"; do
     sed -e "s/\\[VERSION\\]/$version/g" $file > $tmpdir/$file
 done
 
 # Create directory if it doesn't exist and check its permissions
-mkdir -p $prefix/bin || exit 1
+if [ ! -w "$prefix" ]; then
+    die "you do not have sufficient permissions to write in this directory"
+fi
+
+mkdir -p $prefix/{bin,man/man1} || exit 1
 
 if [ ! -w $prefix/bin ]; then
-    echo "$BASENAME: cannot write to $prefix/bin, permission denied" >&2
-    exit 1
+    die "cannot write to $prefix/bin, permission denied"
+fi
+
+if [ ! -w $prefix/man/man1 ]; then
+    die "cannot write to $prefix/man/man1, permission denied"
 fi
 
 # Transfer the source files into their respective directories
 cd $tmpdir
+initinstall
 install $prefix/bin "${binfiles[@]}"
+install $prefix/man/man1 "${manfiles[@]}"
+finishinstall
