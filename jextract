@@ -45,8 +45,7 @@ declare -r BASENAME=${0##*/}
 declare -r VERSION="$BASENAME [VERSION]"
 
 declare -r HELP=$(cat <<EOF
-usage: $BASENAME [-lv] ARCHIVE
-       $BASENAME [-h|-V]
+usage: $BASENAME [-hVv] ARCHIVE
 
 Options:
        -h
