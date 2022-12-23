@@ -1,30 +1,60 @@
 #!/bin/bash
 
+# Mutable globals
 prefix=/usr/local
+dry=0
 
+# Static globals
 declare -r BASENAME=${0##*/}
 
 declare -r ROOTDIR=$(dirname $(realpath $0))
 
 declare -r HELP=$(cat <<EOF
-usage: $BASENAME [--prefix PATH]
-       $BASENAME -h|--help
+usage: $BASENAME [-dh] [--prefix PATH]
 
 Options:
        -h
        --help Print this help message and exit.
 
        --prefix PATH
-              Sets the installation path to PATH. (Default: $prefix)
+              Sets the installation path to PATH. (Default: $prefix).
+
+       -d
+       --dry  Do not actually install files; simply show where they
+	      would be installed to.
 EOF
 	)
 
+# bool <value>
+bool() {
+    local val=${1:?no value}
+    expr $val + 1 >/dev/null || die "invalid boolean value: $val"
+    test $val -ne 0 && return 0
+    false
+}
+
+# Functions
 die() {
     local msg="$1"
     local code=${2:-1}
 
     echo "$BASENAME: $msg" >&2
     exit $code
+}
+
+# usage: fakeinstall DIR FILE...
+fakeinstall() {
+    local installed=()
+    local dir="${1:?no directory}"
+    shift
+    if [ -z "$1" ]; then
+	die "no files to install"
+    fi
+
+    local file
+    for file; do
+	echo "install $dir/$file"
+    done
 }
 
 # usage: install DIR FILE...
@@ -54,7 +84,7 @@ install() {
 }
 
 # Process commandline
-if ! temp=$(getopt -n $BASENAME -o 'h' -l 'help,prefix:' -- "$@"); then
+if ! temp=$(getopt -n $BASENAME -o 'hd' -l 'help,prefix:' -- "$@"); then
     echo "$HELP" | head -n 2 >&2
     echo "Pass -h to the command for a list of options." >&2
     exit 1
@@ -71,6 +101,10 @@ while true; do
 	    prefix="${2/\~/$HOME}"
 	    shift 2
 	    ;;
+	--dry|-d)
+	    dry=1
+	    shift
+	    ;;
 	--)
 	    shift
 	    break
@@ -81,12 +115,24 @@ while true; do
     esac
 done
 
-# Create temporary directory
-tmpdir=$(mktemp -d)
-trap "rm -rvf $tmpdir" EXIT
-
 # Define source files
 binfiles=(jcompress jextract)
+manfiles=({jcompress,jextract}.1)
+
+# Simulate the install
+if bool $dry; then
+    tmpdir=$(mktemp -ud)
+    echo "Copy files into $tmpdir: ${binfiles[@]} ${manfiles[@]}"
+    echo "Install jcompress/jextract version `cat VERSION`"
+    echo "create directories:" $prefix/{bin,man/man1}
+    fakeinstall $prefix/bin "${binfiles[@]}"
+    fakeinstall $prefix/man/man1 "${manfiles[@]}"
+    exit
+fi
+
+# Create temporary directory
+tmpdir=$(mktemp -d)
+trap cleanup EXIT
 
 # Copy source files into temporary directory
 cp -v -t $tmpdir "${binfiles[@]}"
