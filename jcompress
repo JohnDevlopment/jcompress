@@ -204,7 +204,7 @@ EOF
 
 	trap "rm -f 'archive.$fmt'" EXIT
 
-	eval "${cmd[@]}" || die "failed to evaluate command: \$ ${cmd[@]}" 2
+	"${cmd[@]}" || die "failed to evaluate command: \$ ${cmd[*]}" 2
 	exit
 	;;
     debug-get-extension|dbe)
@@ -390,9 +390,9 @@ if bool $dryrun; then
 	echo "${gpgcommand[@]}"
     fi
 else
-    eval "${cmdline[@]}" || die "failed to run command: \$ ${cmdline[@]}" 2
+    "${cmdline[@]}" || die "failed to run command: \$ ${cmdline[*]}" 2
     if [ -v gpgcommand ]; then
-	eval "${gpgcommand[@]}" || die "failed to run command: \$ ${gpgcommand[@]}" 2
+	"${gpgcommand[@]}" || die "failed to run command: \$ ${gpgcommand[*]}" 2
     fi
     # Special: tar.7z archives
     # Delete source file(s) after successful creation of archive
