@@ -22,7 +22,7 @@ die() {
     local code=${2:-1}
 
     echo "$BASENAME: $msg" >&2
-    exit $code
+    exit "$code"
 }
 
 # usage: subflag <variable> <flag> [argument]
@@ -30,8 +30,8 @@ subflag() {
     local flag=${2:?missing flag}
     declare -n Var=${1:?missing varname}
 
-    if bool $Var; then
-	echo $flag $3
+    if bool "$Var"; then
+	echo "$flag" "$3"
     else
 	echo
     fi
@@ -42,7 +42,7 @@ subflag() {
 bool() {
     local val=${1:?no value}
     expr $val + 1 >/dev/null || die "invalid boolean value: $val" 2
-    test $val -ne 0 && return `true`
+    test $val -ne 0 && return $(true)
     false
 }
 
@@ -221,7 +221,7 @@ EOF
 esac
 ###
 
-if ! temp=$(getopt -n $BASENAME -o 'hrVMm:v' -l "$longopts" -- "$@"); then
+if ! temp=$(getopt -n "$BASENAME" -o 'hrVMm:v' -l "$longopts" -- "$@"); then
     usage
     exit 1
 fi
@@ -239,7 +239,7 @@ while true; do
 	    exit
 	    ;;
 	-V|--version)
-	    echo $VERSION
+	    echo "$VERSION"
 	    exit
 	    ;;
 	--use-pigz)
@@ -275,7 +275,7 @@ while true; do
 	    break
 	    ;;
 	*)
-	    die "internal error\n\n`usage`" 2
+	    die "internal error\n\n$(usage)" 2
 	    ;;
     esac
 done
@@ -283,10 +283,10 @@ done
 # Posititional parameters
 case $# in
     0)
-	die "missing filename\n\n`usage`"
+	die "missing filename\n\n$(usage)"
 	;;
     1)
-	die "no files to insert\n\n`usage`"
+	die "no files to insert\n$(usage)"
 	;;
     *)
 
@@ -321,7 +321,7 @@ if [[ $format =~ t(ar\.)?(gz|bz2)$ ]]; then
 	if [ -z "$JC_GPGPUBKEY" ]; then
 	    die "no public key defined in \$JC_GPGPUBKEY"
 	fi
-	gpgcommand=(gpg --encrypt --recipient $JC_GPGPUBKEY "$archive" "&&" rm -v "$archive")
+	gpgcommand=(gpg --encrypt --recipient "$JC_GPGPUBKEY" "$archive" "&&" rm -v "$archive")
     fi
 fi
 
@@ -344,7 +344,7 @@ case "$format" in
 	movefiles=$(subflag movefiles --move)
 	verboseOpt=$(subflag verbose -v)
 
-	cmdline=(zip -T $verboseOpt $movefiles $password $recursive "$archive" "$@")
+	cmdline=(zip -T "$verboseOpt" "$movefiles" "$password" "$recursive" "$archive" "$@")
 	;;
     7z)
 	cmdprefix=7zr
@@ -352,34 +352,33 @@ case "$format" in
 	# passwords are given on the commandline with 7z
 	temp=$password
 	password=
-	if bool $temp; then
+	if bool "$temp"; then
 	    cmdprefix=7za
-	    password="-p"$(_getpassword)
-	    [ $? -eq 0 ] || die "invalid password, $password"
+	    password="-p"$(_getpassword || die "invalid password, $password")
 	fi
 
 	movefiles=$(subflag movefiles -sdel)
 
-	cmdline=($cmdprefix a $movefiles $password "$archive" "$@")
+	cmdline=("$cmdprefix" a "$movefiles" "$password" "$archive" "$@")
 	;;
     tgz|tar.gz)
 	test -z "$pigzcompressor" && z=z
 
-	cmdline=(tar -c${verboseOpt}$z $movefiles $pigzcompressor -f "$archive" "$@")
+	cmdline=(tar "-c${verboseOpt}$z" "$movefiles" "$pigzcompressor" -f "$archive" "$@")
 	;;
     tbz2|tar.bz2)
 	test -z "$pbzip2compressor" && j=j
 
-	cmdline=(tar -c${verboseOpt}$j $movefiles $pbzip2compressor -f "$archive" "$@")
+	cmdline=(tar "-c${verboseOpt}$j" "$movefiles" "$pbzip2compressor" -f "$archive" "$@")
 	;;
     t7z|tar.7z)
-	if bool $movefiles; then
+	if bool "$movefiles"; then
 	    special7z_deletesources=1
 	    unset movefiles
 	fi
 	verboseTar=$(subflag verbose v)
 	verbose7z=$(subflag verbose -bb3)
-	cmdline=(tar -c${verboseTar}f - "$@" "|" 7za a $verbose7z -si "$archive")
+	cmdline=(tar "-c${verboseTar}f" - "$@" "|" 7za a "$verbose7z" -si "$archive")
 	;;
     *)
 	die "$formaterror\n\n$USAGE"
