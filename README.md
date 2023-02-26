@@ -10,7 +10,7 @@ The purpose of `jcompress` and `jextract` is to give a convienent way to
 do really basic archive operations.
 
 **Note**:
-Note that for each program used, not every option is supported by
+For each program used, not every option is supported by
 `jcompress`.
 
 # Features
@@ -49,8 +49,8 @@ In order to work properly, the following programs are needed:
 
 **Suggested**
 
-* pigz (for uncompressing *.gz files much faster)
-* pbzip2 (for uncompressing *.bz2 files much faster)
+* pigz (for (un)compressing *.gz files much faster)
+* pbzip2 (for (un)compressing *.bz2 files much faster)
 
 # Usage
 
