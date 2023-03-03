@@ -3,6 +3,11 @@
 # Mutable globals
 prefix=/usr/local
 dry=0
+allinstalled=()
+editable=0
+binfiles=()
+manfiles=()
+tmpdir=
 
 # Static globals
 declare -r BASENAME=${0##*/}
@@ -10,7 +15,7 @@ declare -r BASENAME=${0##*/}
 declare -r ROOTDIR=$(dirname $(realpath $0))
 
 declare -r HELP=$(cat <<EOF
-usage: $BASENAME [-dh] [--prefix PATH]
+usage: $BASENAME [-dh] [-e|--editable] [--prefix PATH]
 
 Options:
        -h
@@ -22,6 +27,11 @@ Options:
        -d
        --dry  Do not actually install files; simply show where they
 	      would be installed to.
+
+       -e
+       --editable
+             Do an editable install of files; write symbolic links
+	     to the install directories.
 EOF
 	)
 
@@ -74,39 +84,57 @@ finishinstall() {
 	 "That file is neccessary should you decide to uninstall this with uninstall.sh."
     DONE=1
 
-    mandb | tail -n 4
+    if [ -w /usr/lib ]; then
+	mandb | tail -n 4
+    fi
 
-    echo -en "\nInstalled files: "
+    echo -e "\nInstalled files: "
     printf "\t%s\n" "${allinstalled[@]}"
 }
 
-# usage: install DIR FILE...
-allinstalled=()
-
+# usage: install [-p PREFIX] INSTALLDIR FILE...
 install() {
+    # Parse options
+    local prefix
+    while getopts :p: OPT; do
+	case $OPT in
+	    p)
+		prefix="$OPTARG"
+		;;
+	    *)
+		die echo "invalid options\nusage: $BASENAME [-p ARG} [--] ARGS..." 2
+	esac
+    done
+    shift $(( OPTIND - 1 ))
+    OPTIND=1
+
     local installed=()
-    local dir="${1:?no directory}"
+    local installdir="${1:?no directory}"
     shift
     if [ -z "$1" ]; then
 	die "no files to install"
     fi
 
+    # Command based on editable option
+    local linkcmd="mv -f"
+    [ $editable -ne 0 ] && linkcmd="ln -s"
+
     local file
     for file; do
-	if ! mv -f "$file" "$dir/"; then
+	if ! $linkcmd "${prefix:+$prefix/}$file" "$installdir/"; then
 	    # Error
 	    rm -f "${installed[@]}" >&2
 	    die "failed to install $file"
 	fi
-	installed+=("$dir/${file##*/}")
-	allinstalled+=("$dir/${file##*/}")
+	installed+=("$installdir/${file##*/}")
+	allinstalled+=("$installdir/${file##*/}")
     done
 
     printf "%s\n" "${installed[@]}" >&3
 }
 
 # Process commandline
-if ! temp=$(getopt -n $BASENAME -o 'hd' -l 'help,prefix:' -- "$@"); then
+if ! temp=$(getopt -n $BASENAME -o 'hde' -l 'help,dry,prefix:,editable' -- "$@"); then
     echo "$HELP" | head -n 2 >&2
     echo "Pass -h to the command for a list of options." >&2
     exit 1
@@ -127,11 +155,16 @@ while true; do
 	    dry=1
 	    shift
 	    ;;
+	--editable|-e)
+	    editable=1
+	    shift
+	    ;;
 	--)
 	    shift
 	    break
 	    ;;
 	*)
+	    echo "$1"
 	    echo "$BASENAME: internal error" >&2
 	    exit 1
     esac
@@ -141,10 +174,19 @@ done
 binfiles=(jcompress jextract)
 manfiles=({jcompress,jextract}.1)
 
+# Editable install
+if [ $editable -ne 0 ]; then
+    initinstall
+    install -p $ROOTDIR $prefix/bin "${binfiles[@]}"
+    install -p $ROOTDIR $prefix/man/man1 "${manfiles[@]}"
+    finishinstall
+    exit
+fi
+
 # Simulate the install
 if bool $dry; then
     tmpdir=$(mktemp -ud)
-    echo "Copy files into $tmpdir: ${binfiles[@]} ${manfiles[@]}"
+    echo "Copy files into $tmpdir: ${binfiles[*]} ${manfiles[*]}"
     echo "Install jcompress/jextract version `cat VERSION`"
     echo "create directories:" $prefix/{bin,man/man1}
     fakeinstall $prefix/bin "${binfiles[@]}"
