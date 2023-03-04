@@ -46,6 +46,32 @@ bool() {
     false
 }
 
+# usage: quote <string>
+quote() {
+    local str="$1"
+    local arr=($str)
+    local i=${#arr[@]}
+    if [ $i -ne 1 ]; then
+	echo "\"$str\""
+    else
+	echo "$str"
+    fi
+}
+
+# usage: concat [<arg>] ...
+concat() {
+    local string=""
+    local e
+    local sep=""
+    for e in "$@"; do
+	if [ -n "$e" ]; then
+	    string="$string$sep"$(quote "$e")
+	    sep=' '
+	fi
+    done
+    echo "$string"
+}
+
 _getpassword() {
     local pswd copy
 
@@ -385,15 +411,19 @@ case "$format" in
 esac
 
 if bool $dryrun; then
-    echo "${cmdline[@]}"
+    concat "${cmdline[@]}"
     if [ -v gpgcommand ]; then
 	echo "${gpgcommand[@]}"
     fi
 else
-    "${cmdline[@]}" || die "failed to run command: \$ ${cmdline[*]}" 2
+    cmdstr=$(concat "${cmdline[@]}")
+    eval "$cmdstr" || die "failed to run command: \$ ${cmdline[*]}" 2
+
     if [ -v gpgcommand ]; then
-	"${gpgcommand[@]}" || die "failed to run command: \$ ${gpgcommand[*]}" 2
+	cmdstr=$(concat "${gpgcommand[@]}")
+	eval "$cmdstr" || die "failed to run command: \$ ${gpgcommand[*]}" 2
     fi
+
     # Special: tar.7z archives
     # Delete source file(s) after successful creation of archive
     if bool ${special7z_deletesources:-0}; then
