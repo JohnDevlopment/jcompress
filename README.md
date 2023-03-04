@@ -54,5 +54,16 @@ In order to work properly, the following programs are needed:
 
 # Usage
 
-Both programs accept the `-h` and `--help` options. For now, use those to
-to get the list of options. Eventually there will be man pages.
+The most basic usage is to create an archive from one or more files.
+
+```sh
+jcompress dumbbeetle.zip beetle1 beetle2
+```
+
+Another example is if you want to recurse through subdirectories.
+
+```sh
+jcompress -r dumbeetle.tar.gz subdir_with_beetles
+```
+
+To view more options, do `jcompress -h`.
