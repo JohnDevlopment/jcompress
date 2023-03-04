@@ -15,11 +15,11 @@ bool() {
     false
 }
 
-FILEOPENED=0
+Fileopened=0
 SUCCESS=0
 
 cleanup() {
-    bool $FILEOPENED && exec 3>&-
+    bool $Fileopened && exec 3>&-
     bool $SUCCESS && rm -v install_manifest.txt
 }
 
@@ -34,20 +34,22 @@ trap cleanup EXIT
 
 # Open install_manifest.txt for reading
 exec 3<install_manifest.txt
-FILEOPENED=1
+Fileopened=1
 
 # Read each line
 filestoremove=()
 while read -u 3 line; do
-    if [ -f "$line" ]; then
+    if [ -a "$line" ] && ([ -f "$line" ] || [ -L "$line" ]); then
 	test -w "$line" || die "cannot remove $file, permission denied"
 	filestoremove+=("$line")
     fi
 done
 exec 3>&-
-FILEOPENED=0
+Fileopened=0
 
 rm -rfv "${filestoremove[@]}"
 SUCCESS=1
 
-mandb | tail -n 4
+if test -w /usr/lib; then
+    mandb | tail -n 4
+fi
