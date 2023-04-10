@@ -389,13 +389,15 @@ case "$format" in
 	;;
     tgz|tar.gz)
 	test -z "$pigzcompressor" && z=z
+	verboseOpt=$(subflag verbose v)
 
-	cmdline=(tar "-c${verboseOpt}$z" "$movefiles" "$pigzcompressor" -f "$archive" "$@")
+	cmdline=(tar "-c${verboseOpt/ /}$z" "$movefiles" "$pigzcompressor" -f "$archive" "$@")
 	;;
     tbz2|tar.bz2)
 	test -z "$pbzip2compressor" && j=j
+	verboseOpt=$(subflag verbose v)
 
-	cmdline=(tar "-c${verboseOpt}$j" "$movefiles" "$pbzip2compressor" -f "$archive" "$@")
+	cmdline=(tar "-c${verboseOpt/ /}$j" "$movefiles" "$pbzip2compressor" -f "$archive" "$@")
 	;;
     t7z|tar.7z)
 	if bool "$movefiles"; then
