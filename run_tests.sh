@@ -12,11 +12,13 @@ declare -r RED='\033[0;31m'
 declare -r BLUE='\033[0;34m'
 declare -r RESET='\033[0m'
 
+export VERBOSE=0
+
 # Get options
 while getopts :vh OPT; do
     case $OPT in
 	v)
-	    export VERBOSE=1
+	    VERBOSE=1
 	    ;;
 	h)
 	    echo "usage: `basename $0` [-vh] [--]"
