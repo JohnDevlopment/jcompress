@@ -2,7 +2,10 @@
 
 shopt -s expand_aliases
 
-get_extension() {
+## usage: get_extension FILE
+function get_extension {
+    local file="${1:?missing FILE}"
+
     # Look for tar.*/t* extensions
     if [[ $1 =~ \.(t(ar\.)?([g7]z|bz2))$ ]]; then
 	echo "${BASH_REMATCH[1]}"
@@ -16,8 +19,8 @@ get_extension() {
     false
 }
 
-# usage: die <message> [<code>]
-die() {
+## usage: die MESSAGE [CODE]
+function die {
     local msg="$1"
     local code=${2:-1}
 
@@ -25,8 +28,8 @@ die() {
     exit "$code"
 }
 
-# usage: subflag <variable> <flag> [argument]
-subflag() {
+## usage: subflag VARIABLE FLAG [ARGUMENT]
+function subflag {
     local flag=${2:?missing flag}
     declare -n Var=${1:?missing varname}
 
@@ -38,16 +41,16 @@ subflag() {
     true
 }
 
-# usage: bool <value>
-bool() {
+## usage: bool VALUE
+function bool {
     local val=${1:?no value}
     expr $val + 1 >/dev/null || die "invalid boolean value: $val" 2
     test $val -ne 0 && return $(true)
     false
 }
 
-# usage: quote <string>
-quote() {
+## usage: quote STRING
+function quote {
     local str="$1"
     local arr=($str)
     local i=${#arr[@]}
@@ -58,8 +61,8 @@ quote() {
     fi
 }
 
-# usage: concat [<arg>] ...
-concat() {
+## usage: concat [<arg>] ...
+function concat {
     local string=""
     local e
     local sep=""
@@ -72,7 +75,7 @@ concat() {
     echo "$string"
 }
 
-_getpassword() {
+function _getpassword {
     local pswd copy
 
     echo -e "\nEnter the new password" >&2
