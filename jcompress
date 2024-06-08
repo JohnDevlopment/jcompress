@@ -203,7 +203,6 @@ longopts=$(printf "%s," "${longopts[@]}" | sed 's/,$//')
 
 ## usage: do_debug_command [ARG ...]
 function do_debug_command {
-    ### DEBUG: Special debug commands for use with unit tests (remove on release build)
     case "$1" in
 	debug-get-long-options|dglo)
 	    echo -n "$longopts" | sed -E 's/(.*),$/\1/'
@@ -235,7 +234,7 @@ EOF
 
 	    trap "rm -f 'archive.$fmt'" EXIT
 
-	    "${cmd[@]}" || die "failed to evaluate command: \$ ${cmd[*]}" 2
+	    eval "${cmd[@]}" || die "failed to evaluate command: \$ ${cmd[*]}" 2
 	    exit
 	    ;;
 	debug-get-extension|dbe)
