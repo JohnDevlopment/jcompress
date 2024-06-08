@@ -49,9 +49,10 @@ function assert {
 
     # Evaluate test
     if eval test "${tst[@]}"; then
+	# The test passed
 	:
     else
-	prefix="assertion failed: '${tst[@]}'"
+	prefix="assertion failed: \"${tst[*]}\""
 	die "${prefix}${msg:+: }$msg"
     fi
 }
