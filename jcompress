@@ -225,7 +225,7 @@ function do_debug_command {
 		die "required argument: format"
 	    fi
 
-	    output=$($0 --format $fmt --dry-run archive test/{1,2,3}.txt)
+	    output=$($0 --format $fmt --dry-run archive.$fmt test/{1,2,3}.txt)
 	    awkscript=$(cat <<"EOF"
 {
       for (i = 1; i <= NF; i++) {
