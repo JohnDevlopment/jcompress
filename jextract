@@ -1,18 +1,18 @@
 #!/bin/bash
 
-cleanup() {
+function cleanup {
     rm $tmp
     if bool $DOUSAGE; then
 	usage
     fi
 }
 
-usage() {
+function usage {
     echo "$HELP" | head -n 2
 }
 
 # usage: die <message> [<code>]
-die() {
+function die {
     local msg="$1"
     local code=${2:-1}
 
@@ -21,7 +21,7 @@ die() {
 }
 
 # usage: subflag <variable> <flag> [argument]
-subflag() {
+function subflag {
     local flag=${2:?missing flag}
     declare -n Var=${1:?missing varname}
 
@@ -34,7 +34,7 @@ subflag() {
 }
 
 # usage: bool <value>
-bool() {
+function bool {
     local val=${1:?no value}
     expr $val + 1 >/dev/null || die "invalid boolean value: $val"
     test $val -ne 0 && return `true`
