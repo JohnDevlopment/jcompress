@@ -201,20 +201,22 @@ longopts=(
 )
 longopts=$(printf "%s," "${longopts[@]}" | sed 's/,$//')
 
-### DEBUG: Special debug commands for use with unit tests (remove on release build)
-case "$1" in
-    debug-get-long-options|dglo)
-	echo -n "$longopts" | sed -E 's/(.*),$/\1/'
-	exit
-	;;
-    debug-check-archive|dca)
-	fmt=$2
-	if [ -z "$fmt" ]; then
-	    die "required argument: format"
-	fi
+## usage: do_debug_command [ARG ...]
+function do_debug_command {
+    ### DEBUG: Special debug commands for use with unit tests (remove on release build)
+    case "$1" in
+	debug-get-long-options|dglo)
+	    echo -n "$longopts" | sed -E 's/(.*),$/\1/'
+	    exit
+	    ;;
+	debug-check-archive|dca)
+	    fmt=$2
+	    if [ -z "$fmt" ]; then
+		die "required argument: format"
+	    fi
 
-	output=$($0 --format $fmt --dry-run archive test/{1,2,3}.txt)
-	awkscript=$(cat <<"EOF"
+	    output=$($0 --format $fmt --dry-run archive test/{1,2,3}.txt)
+	    awkscript=$(cat <<"EOF"
 {
       for (i = 1; i <= NF; i++) {
 	  subs = "archive\\.[a-z]*"
@@ -224,31 +226,35 @@ case "$1" in
       }
 }
 EOF
-		 )
+		     )
 
-	cmd=(echo "$output")
-	if [ "$3" = "--awk" ]; then
-	    cmd+=("|" awk "'$awkscript'")
-	fi
+	    cmd=(echo "$output")
+	    if [ "$3" = "--awk" ]; then
+		cmd+=("|" awk "'$awkscript'")
+	    fi
 
-	trap "rm -f 'archive.$fmt'" EXIT
+	    trap "rm -f 'archive.$fmt'" EXIT
 
-	"${cmd[@]}" || die "failed to evaluate command: \$ ${cmd[*]}" 2
-	exit
-	;;
-    debug-get-extension|dbe)
-	file="$2"
-	if [ -z "$file" ]; then
-	    die "missing file argument"
-	fi
+	    "${cmd[@]}" || die "failed to evaluate command: \$ ${cmd[*]}" 2
+	    exit
+	    ;;
+	debug-get-extension|dbe)
+	    file="$2"
+	    if [ -z "$file" ]; then
+		die "missing file argument"
+	    fi
 
-	get_extension "file" || die "failed to get extension from $file" 2
-	exit
-	;;
-    *)
-	:
-esac
-###
+	    get_extension "file" || die "failed to get extension from $file" 2
+	    exit
+	    ;;
+	*)
+	    :
+    esac
+    ###
+}
+
+### DEBUG: If a debug command is run, this program automatically exits thereafter
+do_debug_command "$@"
 
 if ! temp=$(getopt -n "$BASENAME" -o 'hrVMm:v' -l "$longopts" -- "$@"); then
     usage
