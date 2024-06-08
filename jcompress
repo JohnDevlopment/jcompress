@@ -6,17 +6,28 @@ shopt -s expand_aliases
 function get_extension {
     local file="${1:?missing FILE}"
 
-    # Look for tar.*/t* extensions
-    if [[ $1 =~ \.(t(ar\.)?([g7]z|bz2))$ ]]; then
-	echo "${BASH_REMATCH[1]}"
-	return
-    elif [[ $1 =~ \.(zip|7z) ]]; then
-	echo "${BASH_REMATCH[1]}"
-	return
-    fi
+    # Write script to file
+    local tmpfile=$(mktemp)
+    cat > $tmpfile <<"EOF"
+use warnings;
+use strict;
 
-    echo -n
-    false
+my $file = $ARGV[0];
+
+if ($file =~ m/.+?(t(?:ar\.)?(?:[g7]z|bz2))/) {
+    $file =~ s/.+?(t(?:ar\.)?(?:[g7]z|bz2))/$1/;
+}
+else {
+    $file =~ s/.+?(7z|zip)$/$1/;
+}
+
+print $file;
+EOF
+
+    local result=$(perl $tmpfile "$file")
+    rm $tmpfile
+
+    echo "$result"
 }
 
 ## usage: die MESSAGE [CODE]
@@ -243,13 +254,12 @@ EOF
 		die "missing file argument"
 	    fi
 
-	    get_extension "file" || die "failed to get extension from $file" 2
+	    get_extension "$file"
 	    exit
 	    ;;
 	*)
 	    :
     esac
-    ###
 }
 
 ### DEBUG: If a debug command is run, this program automatically exits thereafter
