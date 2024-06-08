@@ -196,7 +196,7 @@ declare -r BASENAME=${0##*/}
 declare -r VERSION="$BASENAME [VERSION]"
 
 declare -r USAGE=$(cat <<EOF
-usage: $BASENAME [-hMrVv] [--longoption ...] [-f FORMAT] [--] archive [file|dir ...]
+usage: $BASENAME [-hMnrVv] [--longoption ...] [-f FORMAT] [--] archive [file|dir ...]
 
 Valid Formats:
        zip
@@ -249,6 +249,7 @@ Options:
        --move Move the files into the archive. Actually, the files are
        	      simply deleted after copying them.
 
+       -n
        --dry-run
               Do not take any action; rather, print out the commandline
 	      resulting from the command.
@@ -347,7 +348,7 @@ EOF
 ### DEBUG: If a debug command is run, this program automatically exits thereafter
 do_debug_command "$@"
 
-if ! temp=$(getopt -n "$BASENAME" -o 'hrVMm:v' -l "$longopts" -- "$@"); then
+if ! temp=$(getopt -n "$BASENAME" -o 'hrVMm:vn' -l "$longopts" -- "$@"); then
     usage
     exit 1
 fi
@@ -384,7 +385,7 @@ while true; do
 	    password=1
 	    shift
 	    ;;
-	--dry-run)
+	-n|--dry-run)
 	    dryrun=1
 	    shift
 	    ;;
