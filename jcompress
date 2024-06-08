@@ -142,7 +142,7 @@ Options:
 
        --password
               Encrypt the archive with a password. What happens
-              exactly will depend on the format.
+              exactly will depend on the format. (See manpage)
 
        -v
        --verbose
