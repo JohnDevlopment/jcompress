@@ -130,6 +130,13 @@ Actually, the files are simply deleted after copying them.
 .B jcompress
 implements this option for tar.7z files, since \fB-sdel\fR doesn't actually work in that instance.
 .
+.TP
+.B -n
+.TQ
+.B --dry-run
+Do not take any action; rather, print out the commandline resulting from this command.
+This option prints out the command that is actually used to create the archive.
+.
 .SH "EXIT STATUS"
 .TP
 .B 0
