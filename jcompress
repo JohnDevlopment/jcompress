@@ -52,6 +52,23 @@ function subflag {
     true
 }
 
+## usage: assert EXPRESSION [MESSAGE]
+function assert {
+    if ! eval "$1"; then
+	local prog lineno
+	lineno=$(caller | awk '{ print $1; }')
+	prog=$(realpath $(caller | awk '{ print $2; }'))
+
+	echo -n "assertion failed: '$1'" >&2
+	if [ -n "$2" ]; then
+	    echo ", $2 ('$prog' line $lineno)" >&2
+	else
+	    echo " ('$prog' line $lineno)" >&2
+	fi
+	exit 1
+    fi
+}
+
 ## usage: bool VALUE
 function bool {
     local val=${1:?no value}
@@ -108,6 +125,71 @@ function _getpassword {
 
     echo "$pswd"
     true
+}
+
+## usage: get_archive_command format [ARG ...]
+## Side effect: sets $cmdline, $password
+function get_archive_command {
+    # Which format?
+    case "$format" in
+	zip)
+	    temp=$password
+	    password=$(subflag temp --encrypt)
+
+	    movefiles=$(subflag movefiles --move)
+	    verboseOpt=$(subflag verbose -v)
+
+	    cmdline=(zip -T "$verboseOpt" "$movefiles" "$password" "$recursive" "$archive" "$@")
+	    ;;
+	7z)
+	    cmdprefix=7zr
+
+	    # passwords are given on the commandline with 7z
+	    temp=$password
+	    password=
+	    assert '[[ -n $temp ]]'
+	    if bool "$temp"; then
+		cmdprefix=7za
+		password="-p"$(_getpassword || die "invalid password, $password")
+	    fi
+
+	    movefiles=$(subflag movefiles -sdel)
+
+	    cmdline=("$cmdprefix" a "$movefiles" "$password" "$archive" "$@")
+	    ;;
+	tgz|tar.gz)
+	    local z
+
+	    # FIXME: If the archive already exists, then files inside it are displaced
+	    test -z "$pigzcompressor" && z=z
+	    verboseOpt=$(subflag verbose v)
+
+	    cmdline=(tar "-c${verboseOpt/ /}$z" "$movefiles" "$pigzcompressor" -f "$archive" "$@")
+	    ;;
+	tbz2|tar.bz2)
+	    local j
+
+	    # FIXME: If the archive already exists, then files inside it are displaced
+	    test -z "$pbzip2compressor" && j=j
+	    verboseOpt=$(subflag verbose v)
+
+	    cmdline=(tar "-c${verboseOpt/ /}$j" "$movefiles" "$pbzip2compressor" -f "$archive" "$@")
+	    ;;
+	t7z|tar.7z)
+	    local verboseTar verbose7z
+
+	    # FIXME: If the archive already exists, then files inside it are displaced
+	    if bool "$movefiles"; then
+		special7z_deletesources=1
+		unset movefiles
+	    fi
+	    verboseTar=$(subflag verbose v)
+	    verbose7z=$(subflag verbose -bb3)
+	    cmdline=(tar "-c${verboseTar}f" - "$@" "|" 7za a "$verbose7z" -si "$archive")
+	    ;;
+	*)
+	    die "$formaterror\n\n$USAGE"
+    esac
 }
 
 declare -r BASENAME=${0##*/}
@@ -379,56 +461,8 @@ if [[ ! $format =~ t(ar\.)?bz2$ && -v COMPRESSOR2 ]]; then
     echo "$BASENAME: --use-pbzip2 is not supported by $format files" >&2
 fi
 
-# Which format?
-case "$format" in
-    zip)
-	temp=$password
-	password=$(subflag temp --encrypt)
-
-	movefiles=$(subflag movefiles --move)
-	verboseOpt=$(subflag verbose -v)
-
-	cmdline=(zip -T "$verboseOpt" "$movefiles" "$password" "$recursive" "$archive" "$@")
-	;;
-    7z)
-	cmdprefix=7zr
-
-	# passwords are given on the commandline with 7z
-	temp=$password
-	password=
-	if bool "$temp"; then
-	    cmdprefix=7za
-	    password="-p"$(_getpassword || die "invalid password, $password")
-	fi
-
-	movefiles=$(subflag movefiles -sdel)
-
-	cmdline=("$cmdprefix" a "$movefiles" "$password" "$archive" "$@")
-	;;
-    tgz|tar.gz)
-	test -z "$pigzcompressor" && z=z
-	verboseOpt=$(subflag verbose v)
-
-	cmdline=(tar "-c${verboseOpt/ /}$z" "$movefiles" "$pigzcompressor" -f "$archive" "$@")
-	;;
-    tbz2|tar.bz2)
-	test -z "$pbzip2compressor" && j=j
-	verboseOpt=$(subflag verbose v)
-
-	cmdline=(tar "-c${verboseOpt/ /}$j" "$movefiles" "$pbzip2compressor" -f "$archive" "$@")
-	;;
-    t7z|tar.7z)
-	if bool "$movefiles"; then
-	    special7z_deletesources=1
-	    unset movefiles
-	fi
-	verboseTar=$(subflag verbose v)
-	verbose7z=$(subflag verbose -bb3)
-	cmdline=(tar "-c${verboseTar}f" - "$@" "|" 7za a "$verbose7z" -si "$archive")
-	;;
-    *)
-	die "$formaterror\n\n$USAGE"
-esac
+# Sets $cmdline[]
+get_archive_command "$@"
 
 if bool $dryrun; then
     concat "${cmdline[@]}"
