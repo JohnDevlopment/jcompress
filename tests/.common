@@ -1,8 +1,9 @@
+# -*- mode: sh; -*-
 # Source this file to get common unit test functions
 
 export NOTRAP=
 
-_error() {
+function _error {
     if [ -n "$NOTRAP" ]; then
 	NOTRAP=
 	return
@@ -11,10 +12,14 @@ _error() {
     die "$msg"
 }
 
-# die <message> [<code>]
-#   Print <message> to stderr and exit
-#   with code <code>. <code> defaults to 1
-die() {
+## usage: die MSG [CODE]
+function die {
+    LASTCOMMAND=$(cat $HISTFILE | tail -n 1)
+    echo -e "$TESTNAME: ${1:-<no message>}" >&2
+    exit ${2:-1}
+}
+
+function die {
     LASTCOMMAND=$(cat $HISTFILE | tail -n 1)
     local msg="${1:-undefined message}"
     echo "$TESTNAME: $msg" >&2
@@ -22,7 +27,7 @@ die() {
 }
 
 # assert <boolean-test> [--msg <message>]
-assert() {
+function assert {
     local tst=()
     local opt="$1"
 
@@ -51,10 +56,8 @@ assert() {
     fi
 }
 
-# echo [<same-args-as-echo>...]
-#   Calls echo with the provided arguments
-#   only if $VERBOSE is set
-vecho() {
+## usage: vecho [ECHO-ARGS...]
+function vecho {
     local opts=
     local OPT=
     local pfx=
