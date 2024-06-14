@@ -3,6 +3,7 @@
 
 export NOTRAP=
 
+## usage: _error LINENUMBER COMMANDLINE
 function _error {
     if [ -n "$NOTRAP" ]; then
 	NOTRAP=
@@ -12,12 +13,12 @@ function _error {
     die "$msg"
 }
 
-## usage: die MSG [CODE]
-function die {
-    LASTCOMMAND=$(cat $HISTFILE | tail -n 1)
-    echo -e "$TESTNAME: ${1:-<no message>}" >&2
-    exit ${2:-1}
-}
+# ## usage: die MSG [CODE]
+# function die {
+#     LASTCOMMAND=$(cat $HISTFILE | tail -n 1)
+#     echo -e "$TESTNAME: ${1:-<no message>}" >&2
+#     exit ${2:-1}
+# }
 
 function die {
     LASTCOMMAND=$(cat $HISTFILE | tail -n 1)
@@ -54,6 +55,17 @@ function assert {
     else
 	prefix="assertion failed: \"${tst[*]}\""
 	die "${prefix}${msg:+: }$msg"
+    fi
+}
+
+## usage: assert EXPRESSION [MSG]
+function assert2 {
+    local exp="${1:?missing EXPRESSION}"
+    local msg="$msg"
+
+    if ! eval "$exp"; then
+	local prefix="assertion failed: \"${tst[*]}\""
+	die "${prefix}${msg:+: $msg}"
     fi
 }
 

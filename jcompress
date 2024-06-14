@@ -127,6 +127,50 @@ function _getpassword {
     true
 }
 
+## usage: check_missing_option VALUE OPTION FUNCTION
+function check_missing_option {
+    local value="$1"
+    local option="$2"
+    local func="$3"
+    test -z "$1" && die "$func: Missing argument: $option"
+}
+
+## usage: string-match STRING PATTERN
+function string-match {
+    local string="$1"
+    local pattern="$2"
+
+    check_missing_option "$string" STRING string-match
+    check_missing_option "$pattern" PATTERN string-match
+
+    case "$string" in
+	$pattern)
+	    true
+	    ;;
+	*)
+	    false
+    esac
+}
+
+## usage: check_archive_right_format FILE SUBSTR MSG
+function check_archive_right_format {
+    local file="$1"
+    local substr="$2"
+    local msg="$3"
+
+    check_missing_option "$file" FILE check_archive_right_format
+    check_missing_option "$substr" SUBSTR check_archive_right_format
+    check_missing_option "$msg" MSG check_archive_right_format
+
+    local type=$(file "$file")
+    if (echo "$type" | grep "$substr" > /dev/null); then
+	# Matches
+	:
+    else
+	die "'$file's type mismatch; \`file \"$type\"\`"
+    fi
+}
+
 ## usage: get_archive_command format [ARG ...]
 ## Side effect: sets $cmdline, $password
 function get_archive_command {
@@ -160,10 +204,12 @@ function get_archive_command {
 	tgz|tar.gz)
 	    local z
 
-	    # FIXME: If the archive already exists, then files inside it are displaced
 	    test -z "$pigzcompressor" && z=z
 	    verboseOpt=$(subflag verbose v)
 
+	    # TODO: Change the commandline if the archive already exists
+
+	    # FIXME: If the archive already exists, then files inside it are displaced
 	    cmdline=(tar "-c${verboseOpt/ /}$z" "$movefiles" "$pigzcompressor" -f "$archive" "$@")
 	    ;;
 	tbz2|tar.bz2)
