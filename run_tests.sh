@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # usage: bool <value>
-bool() {
+function bool {
     local val=${1:?no value}
     expr $val + 1 >/dev/null || die "invalid boolean value: $val"
     test $val -ne 0 && return `true`
@@ -40,8 +40,21 @@ stderr=()
 codes=()
 testnames=()
 
+# Create a temp directory and remove it recursively at exit
 tmpdir=$(mktemp -d)
 trap "rm -rf $tmpdir" EXIT
+
+# Export a function that lets a test create its own temp subdirectory
+temp=$(cat <<EOF
+function temp-subdir {
+    local name="\${1:?missing NAME}"
+    mkdir -p "$tmpdir/\$name"
+    echo "$tmpdir/\$name"
+}
+EOF
+    )
+eval "$temp" || exit 1
+export -f temp-subdir
 
 # Run each test
 for file in test_*.sh
