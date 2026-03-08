@@ -420,7 +420,7 @@ while true; do
 	    shift
 	    ;;
 	--use-pbzip2)
-	    COMPRESSOR2='--use-compress-program=pbzip2'
+	    pbzip2compressor='--use-compress-program=pbzip2'
 	    shift
 	    ;;
 	-r|--recursive)
